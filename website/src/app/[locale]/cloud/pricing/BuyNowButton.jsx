@@ -1,15 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, CircularProgress, Alert } from '@mui/material';
+import { Button, CircularProgress } from '@mui/material';
 import { Cloud } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 
-export default function BuyNowButton({ tier, billingCycle = 'monthly', label, variant = 'contained' }) {
+const checkoutAPI = {
+  async createSession({ tier, billing_cycle, success_url, cancel_url }) {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tier, billing_cycle, success_url, cancel_url }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.checkout_url) {
+      throw new Error(data.error || 'Checkout unavailable');
+    }
+    return data;
+  },
+};
+
+export default function BuyNowButton({ tier, billingCycle = 'monthly' }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [pendingCheckout, setPendingCheckout] = useState(false);
-  const { isAuthenticated, isLoading: authLoading, token } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     if (!pendingCheckout || authLoading) return;
@@ -23,33 +38,19 @@ export default function BuyNowButton({ tier, billingCycle = 'monthly', label, va
   }, [pendingCheckout, authLoading, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function redirectToLogin() {
-    const params = new URLSearchParams({ redirect: '/cloud/pricing', tier, billing_cycle: billingCycle });
+    const params = new URLSearchParams({ redirect: '/cloud/pricing', tier });
     window.location.href = `/login?${params}`;
   }
 
   async function startCheckout() {
-    const origin = window.location.origin;
-    const successUrl = `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${origin}/cloud/pricing`;
-
+    setError(null);
     try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ tier, billing_cycle: billingCycle, success_url: successUrl, cancel_url: cancelUrl }),
+      const data = await checkoutAPI.createSession({
+        tier,
+        billing_cycle: billingCycle,
+        success_url: window.location.origin + '/checkout/success',
+        cancel_url: window.location.href,
       });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.checkout_url) {
-        setError('Checkout is temporarily unavailable. Please contact support@mahalaxmi.ai');
-        setLoading(false);
-        return;
-      }
-
       window.location.href = data.checkout_url;
     } catch {
       setError('Checkout is temporarily unavailable. Please contact support@mahalaxmi.ai');
@@ -59,8 +60,8 @@ export default function BuyNowButton({ tier, billingCycle = 'monthly', label, va
 
   function handleClick() {
     if (loading) return;
-    setError(null);
     setLoading(true);
+    setError(null);
 
     if (authLoading) {
       setPendingCheckout(true);
@@ -79,19 +80,20 @@ export default function BuyNowButton({ tier, billingCycle = 'monthly', label, va
   return (
     <>
       <Button
-        variant={variant}
+        variant="contained"
+        color="primary"
         fullWidth
         startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <Cloud />}
         onClick={handleClick}
         disabled={loading}
-        sx={{ mb: variant === 'contained' ? 3 : 2.5 }}
+        sx={{ mb: 2 }}
       >
-        {loading ? 'Redirecting…' : label}
+        {loading ? 'Redirecting…' : 'Get Started'}
       </Button>
       {error && (
-        <Alert severity="error" sx={{ mt: 1, mb: 1 }}>
+        <p style={{ color: '#d32f2f', fontSize: '0.8rem', marginTop: 4, textAlign: 'center' }}>
           {error}
-        </Alert>
+        </p>
       )}
     </>
   );

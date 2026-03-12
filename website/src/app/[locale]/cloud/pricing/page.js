@@ -1,12 +1,18 @@
 import { setRequestLocale } from 'next-intl/server';
 import { getAlternateLanguages, getCanonical, getOpenGraphLocale } from '@/utils/i18nMetadata';
 import { locales } from '@/i18n/routing';
-import { fetchCloudPricing } from '@/lib/cloudPricing';
 import {
-  Container, Box, Typography, Button, Paper, Breadcrumbs,
-  Accordion, AccordionSummary, AccordionDetails,
+  Container,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Breadcrumbs,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
 } from '@mui/material';
-import { ExpandMore, NavigateNext, ArrowForward, Security } from '@mui/icons-material';
+import { ExpandMore, NavigateNext, ArrowForward } from '@mui/icons-material';
 import Link from 'next/link';
 import CloudPricingDisplay from './CloudPricingDisplay';
 
@@ -19,15 +25,17 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }) {
   const { locale } = await params;
   return {
-    title: 'Mahalaxmi Cloud Pricing — Flat Monthly Subscription',
-    description: 'Mahalaxmi Cloud pricing: flat monthly subscription for your dedicated orchestration VM. AI provider costs are separate — you bring your own keys.',
+    title: 'Cloud Pricing — Mahalaxmi',
+    description:
+      'Mahalaxmi Cloud pricing: flat monthly subscription for your dedicated orchestration VM. AI provider costs are separate — you bring your own keys.',
     alternates: {
       canonical: getCanonical(locale, '/cloud/pricing'),
       languages: getAlternateLanguages('/cloud/pricing'),
     },
     openGraph: {
-      title: 'Mahalaxmi Cloud Pricing — Flat Monthly, Cancel Anytime',
-      description: 'Flat monthly subscription for your dedicated orchestration VM. AI costs go directly to your provider.',
+      title: 'Cloud Pricing — Mahalaxmi',
+      description:
+        'Flat monthly subscription for your dedicated orchestration VM. Cancel anytime, no long-term contract.',
       url: '/cloud/pricing',
       images: [{ url: '/mahalaxmi_logo.png' }],
       locale: getOpenGraphLocale(locale),
@@ -42,23 +50,23 @@ const faqs = [
   },
   {
     q: 'Do I pay for AI tokens separately?',
-    a: 'Yes. Mahalaxmi Cloud pricing covers your dedicated orchestration VM only. AI provider costs (Claude Code, OpenAI, AWS Bedrock, Google Gemini, etc.) are billed directly by your provider based on your usage and their pricing. Mahalaxmi has no visibility into your AI provider billing.',
+    a: 'Yes. Mahalaxmi Cloud pricing covers your dedicated orchestration VM only. AI provider costs (Claude Code, OpenAI, AWS Bedrock, Google Gemini, etc.) are billed directly by your provider based on your usage and their pricing.',
   },
   {
     q: 'What happens to my data when I stop the server?',
-    a: 'Stopping the server pauses the VM but preserves your disk. Your codebase index, project memory, cycle history, and configuration all persist. Restarting the server restores exactly where you left off. Deleting a server permanently removes all associated data.',
+    a: 'Stopping the server pauses the VM but preserves your disk. Your codebase index, project memory, cycle history, and configuration all persist. Restarting restores exactly where you left off. Deleting a server permanently removes all associated data.',
   },
   {
     q: 'Is there a minimum commitment or contract?',
-    a: 'No long-term contract. Mahalaxmi Cloud is a month-to-month Stripe subscription. Cancel anytime — no cancellation fee. Your server remains active until the end of the current billing period.',
+    a: 'No long-term contract. Mahalaxmi Cloud is a month-to-month Stripe subscription. Cancel anytime with no cancellation fee. Your server remains active until the end of the current billing period.',
   },
   {
     q: 'How does VS Code connect to my server?',
-    a: 'The Mahalaxmi VS Code extension handles the connection automatically. After provisioning you receive an "Open in VS Code" button that passes a secure connection URL and license key to the extension via a deep link. No manual SSH or config required.',
+    a: 'The Mahalaxmi VS Code extension handles the connection automatically. After provisioning you receive an "Open in VS Code" button that passes a secure connection URL via a deep link (vscode://thrivetech.mahalaxmi/configure). No manual SSH or config required.',
   },
   {
     q: 'Are my API keys safe?',
-    a: 'Yes. Your AI provider keys are encrypted (AES-256-GCM) before being stored and are only decrypted on your VM during the boot sequence. They are never logged, never returned by any API, and never visible to Mahalaxmi staff.',
+    a: 'Yes. Your AI provider keys are encrypted (AES-256-GCM) before being stored and are only decrypted on your VM during the boot sequence. They are never logged, never returned by any API, and never visible to ThriveTech staff.',
   },
   {
     q: 'Where are the servers located?',
@@ -74,17 +82,13 @@ export default async function CloudPricingPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
-  const pricingData = await fetchCloudPricing();
-
   return (
     <Container maxWidth="lg" sx={{ py: { xs: 4, md: 8 } }}>
       <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
-        <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>Home</Link>
         <Link href="/cloud" style={{ textDecoration: 'none', color: 'inherit' }}>Cloud</Link>
         <Typography color="text.primary">Pricing</Typography>
       </Breadcrumbs>
 
-      {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 6 }}>
         <Typography variant="h3" component="h1" sx={{ fontWeight: 800, mb: 2 }}>
           Simple monthly subscription
@@ -95,70 +99,12 @@ export default async function CloudPricingPage({ params }) {
         </Typography>
       </Box>
 
-      {/* Pricing tiers or fallback */}
-      {pricingData ? (
-        <CloudPricingDisplay pricingData={pricingData} />
-      ) : (
-        <Box sx={{ py: { xs: 4, md: 8 }, bgcolor: 'grey.50', borderRadius: 4, mb: 6 }}>
-          <Container maxWidth="md">
-            <Box
-              sx={{
-                textAlign: 'center',
-                p: { xs: 4, md: 6 },
-                borderRadius: 4,
-                bgcolor: 'white',
-                border: '1px solid',
-                borderColor: 'warning.light',
-                boxShadow: '0 4px 20px rgba(237, 108, 2, 0.1)',
-              }}
-            >
-              <Box
-                sx={{
-                  width: 60, height: 60, borderRadius: '50%',
-                  bgcolor: 'warning.light',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  mx: 'auto', mb: 3,
-                }}
-              >
-                <Security sx={{ fontSize: 32, color: 'warning.dark' }} />
-              </Box>
-              <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
-                Contact Support for Pricing
-              </Typography>
-              <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 400, mb: 2, maxWidth: 600, mx: 'auto' }}>
-                Pricing information is currently unavailable. Our support team is ready to assist with current pricing and availability.
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <Button
-                  component={Link}
-                  href="/contact"
-                  variant="contained"
-                  size="large"
-                  endIcon={<ArrowForward />}
-                  sx={{ px: 5, py: 1.5, fontWeight: 600, borderRadius: 2 }}
-                >
-                  Contact Support
-                </Button>
-                <Button
-                  component="a"
-                  href="mailto:support@mahalaxmi.ai"
-                  variant="outlined"
-                  size="large"
-                  sx={{ px: 4, py: 1.5, fontWeight: 600, borderRadius: 2 }}
-                >
-                  Email: support@mahalaxmi.ai
-                </Button>
-              </Box>
-            </Box>
-          </Container>
-        </Box>
-      )}
+      <CloudPricingDisplay />
 
-      {/* License note */}
       <Paper
         elevation={0}
         variant="outlined"
-        sx={{ p: 3, mb: 8, borderLeft: '4px solid', borderColor: 'info.main', borderRadius: '0 8px 8px 0' }}
+        sx={{ p: 3, mt: 6, mb: 8, borderLeft: '4px solid', borderColor: 'info.main', borderRadius: '0 8px 8px 0' }}
       >
         <Typography variant="body2" color="text.secondary">
           <strong>AI provider costs not included.</strong> Mahalaxmi Cloud covers your dedicated VM only.
@@ -167,7 +113,6 @@ export default async function CloudPricingPage({ params }) {
         </Typography>
       </Paper>
 
-      {/* FAQ */}
       <Box sx={{ mb: 8 }}>
         <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 4 }}>
           Frequently asked questions
@@ -184,7 +129,6 @@ export default async function CloudPricingPage({ params }) {
         ))}
       </Box>
 
-      {/* CTA */}
       <Box sx={{ textAlign: 'center', py: 4, borderTop: '1px solid', borderColor: 'divider' }}>
         <Button
           component={Link}
