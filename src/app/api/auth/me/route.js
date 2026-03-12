@@ -20,24 +20,18 @@ export async function GET() {
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
-    return NextResponse.json({ error: 'Auth service unavailable' }, { status: 503 });
-  }
-
-  if (response.status === 401) {
-    const cookieStore2 = cookies();
-    cookieStore2.delete('mahalaxmi_token');
     return NextResponse.json({ user: null, isAuthenticated: false });
   }
 
   if (!response.ok) {
-    return NextResponse.json({ error: 'Auth service error' }, { status: 503 });
+    return NextResponse.json({ user: null, isAuthenticated: false });
   }
 
   let data;
   try {
     data = await response.json();
   } catch {
-    return NextResponse.json({ error: 'Invalid response from auth service' }, { status: 503 });
+    return NextResponse.json({ user: null, isAuthenticated: false });
   }
 
   return NextResponse.json({ user: data.user, isAuthenticated: true });
