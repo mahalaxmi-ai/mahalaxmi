@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import axios from 'axios';
 import {
   Button,
   CircularProgress,
@@ -25,7 +26,13 @@ function validateProjectName(value) {
   return null;
 }
 
-export default function ProjectNameModal({ open, serverId, onConfigured, onClose }) {
+export default function ProjectNameModal({
+  open,
+  serverId,
+  onConfigured,
+  onClose,
+  onAlreadyConfigured,
+}) {
   const [value, setValue] = useState('');
   const [validationError, setValidationError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -49,48 +56,44 @@ export default function ProjectNameModal({ open, serverId, onConfigured, onClose
     setApiError(null);
 
     try {
-      const res = await fetch(`/api/mahalaxmi/servers/${serverId}/configure`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_name: value }),
+      await axios.patch(`/api/mahalaxmi/servers/${serverId}/configure`, {
+        project_name: value,
       });
+      handleReset();
+      onConfigured();
+    } catch (error) {
+      const status = error?.response?.status;
+      const code = error?.response?.data?.code;
 
-      if (res.status === 409) {
-        const data = await res.json().catch(() => ({}));
-        if (data.code === 'already_configured') {
-          onClose();
-          return;
-        }
-        if (data.code === 'name_taken') {
-          setApiError('That project name is already taken. Please choose a different name.');
-          setSaving(false);
-          return;
-        }
-        setApiError(data.error || 'Conflict. Please try a different name.');
+      if (status === 409 && code === 'name_taken') {
+        setApiError('That project name is already taken. Please choose another.');
         setSaving(false);
         return;
       }
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setApiError(data.error || 'Failed to save project name. Please try again.');
-        setSaving(false);
+      if (status === 409 && code === 'already_configured') {
+        handleReset();
+        onAlreadyConfigured('This server has already been configured. Please refresh to see the latest state.');
         return;
       }
 
-      const data = await res.json().catch(() => ({}));
-      onConfigured({ project_name: value, fqdn: data.fqdn });
-    } catch {
-      setApiError('Network error. Please check your connection and try again.');
+      setApiError(
+        error?.response?.data?.message || 'Failed to save project name. Please try again.'
+      );
       setSaving(false);
     }
   }
 
-  function handleClose() {
-    if (saving) return;
+  function handleReset() {
     setValue('');
     setValidationError(null);
     setApiError(null);
+    setSaving(false);
+  }
+
+  function handleClose() {
+    if (saving) return;
+    handleReset();
     onClose();
   }
 
@@ -98,7 +101,7 @@ export default function ProjectNameModal({ open, serverId, onConfigured, onClose
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 700 }}>Name your server</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Configure your server</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ mb: 2 }}>
           Choose a project name. This becomes your server&apos;s subdomain:{' '}
@@ -106,8 +109,8 @@ export default function ProjectNameModal({ open, serverId, onConfigured, onClose
             {value || 'your-name'}.mahalaxmi.ai
           </Typography>
           <br />
-          Lowercase letters, digits, and hyphens only. 3–40 characters. Cannot start or end with a hyphen.
-          Once set, this cannot be changed.
+          Lowercase letters, digits, and hyphens only. 3–40 characters. Cannot start or end with a
+          hyphen. Once set, this cannot be changed.
         </DialogContentText>
 
         <TextField
