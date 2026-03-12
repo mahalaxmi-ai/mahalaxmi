@@ -34,6 +34,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Checkout not configured' }, { status: 503 });
   }
 
+  const cookieHeader = request.headers.get('cookie') || '';
   const cookieStore = await cookies();
   const token = cookieStore.get('mahalaxmi_token')?.value;
   if (!token) {
@@ -67,6 +68,7 @@ export async function POST(request) {
       headers: {
         'X-Channel-API-Key': pakKey,
         'Content-Type': 'application/json',
+        'Cookie': cookieHeader,
         'x-user-id': userId,
         'x-user-email': userEmail,
       },
