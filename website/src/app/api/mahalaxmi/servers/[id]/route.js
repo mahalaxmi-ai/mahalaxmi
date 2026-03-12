@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function PATCH(request, { params }) {
+export async function GET(request, { params }) {
   const { id } = await params;
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
@@ -16,44 +16,25 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
-  }
-
-  const { project_name } = body;
-  if (!project_name || typeof project_name !== 'string') {
-    return NextResponse.json({ error: 'project_name is required' }, { status: 400 });
-  }
-
   const userId = request.headers.get('x-user-id') || '';
   const userEmail = request.headers.get('x-user-email') || '';
 
   try {
-    const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/configure`, {
-      method: 'PATCH',
+    const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}`, {
       headers: {
         'X-Channel-API-Key': pakKey,
-        'Content-Type': 'application/json',
         'x-user-id': userId,
         'x-user-email': userEmail,
       },
-      body: JSON.stringify({ project_name }),
+      cache: 'no-store',
     });
 
-    if (res.status === 409) {
-      const conflictData = await res.json().catch(() => ({}));
-      return NextResponse.json(conflictData, { status: 409 });
-    }
-
     if (!res.ok) {
-      return NextResponse.json({ error: 'Configuration failed' }, { status: 502 });
+      return NextResponse.json({ error: 'Server unavailable' }, { status: res.status === 404 ? 404 : 502 });
     }
 
     const data = await res.json();
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data);
   } catch {
     return NextResponse.json({ error: 'Service unreachable' }, { status: 502 });
   }
