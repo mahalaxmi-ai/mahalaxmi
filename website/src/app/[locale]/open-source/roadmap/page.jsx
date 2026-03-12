@@ -1,13 +1,10 @@
+'use client';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import Link from 'next/link';
 
-export const metadata = {
-  title: 'Roadmap | Mahalaxmi Open Source',
-  description: 'Track the Mahalaxmi open-source development roadmap — completed milestones, work in progress, and planned features.',
-};
 
 const TEAL = '#00C8C8';
 

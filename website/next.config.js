@@ -1,5 +1,19 @@
-const withNextIntl = require('next-intl/plugin')('./src/i18n/request.js')
+const createNextIntlPlugin = require('next-intl/plugin');
 
-module.exports = withNextIntl({
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.js');
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: 'standalone',
-})
+  reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'mahalaxmi.ai',
+      },
+    ],
+  },
+};
+
+module.exports = withNextIntl(nextConfig);

@@ -1,3 +1,4 @@
+'use client';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
@@ -14,10 +15,6 @@ const codeBlockSx = {
   overflowX: 'auto' as const,
 };
 
-export const metadata = {
-  title: 'VS Code Extension | Mahalaxmi Docs',
-  description: 'Install the Mahalaxmi VS Code extension, connect to your cloud server, review AI-proposed changes, and accept or reject file edits.',
-};
 
 export default function VsCodePage() {
   return (

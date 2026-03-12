@@ -1,3 +1,4 @@
+'use client';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
@@ -13,10 +14,6 @@ const codeBlockSx = {
   my: 1,
 };
 
-export const metadata = {
-  title: 'Quickstart | Mahalaxmi Docs',
-  description: 'Get up and running with Mahalaxmi in three steps.',
-};
 
 export default function QuickstartPage() {
   return (

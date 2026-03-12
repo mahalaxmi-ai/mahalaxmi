@@ -24,42 +24,33 @@ const PAK_MAP = {
   },
 };
 
+const PRODUCT_NAMES = {
+  'mahalaxmi-ai-terminal-orchestration': 'Mahalaxmi AI Terminal Orchestration',
+  'mahalaxmi-headless-orchestration': 'Mahalaxmi Headless Orchestration',
+  'mahalaxmi-vscode-extension': 'Mahalaxmi VS Code Extension',
+};
+
 async function fetchPlatformProduct(slug, meta) {
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
-  const placeholder = {
-    slug,
-    ...meta,
-    is_platform_connected: false,
-    platform_status_message:
-      'Pricing temporarily unavailable. Contact support@mahalaxmi.ai',
-  };
-
-  if (!platformUrl || !meta.key) {
-    return placeholder;
-  }
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/public/product`, {
       headers: { 'X-Channel-API-Key': meta.key },
-      next: { revalidate: 60 },
+      next: { revalidate: 30 },
     });
-
-    if (!res.ok) {
-      return placeholder;
-    }
-
+    if (!res.ok) throw new Error('Platform error');
     const data = await res.json();
-    return {
-      ...data,
-      slug,
-      category_id: meta.category_id,
-      category_name: meta.category_name,
-      image: meta.image,
-      is_featured: meta.is_featured,
-      is_platform_connected: true,
-    };
+    return { ...data, slug, ...meta, is_platform_connected: true, data_source: 'platform' };
   } catch {
-    return placeholder;
+    return {
+      slug,
+      ...meta,
+      pricing_options: [],
+      pricing_type: 'unavailable',
+      name: PRODUCT_NAMES[slug] || slug,
+      is_platform_connected: false,
+      data_source: 'placeholder',
+      platform_status_message: 'Pricing temporarily unavailable. Contact support@mahalaxmi.ai',
+    };
   }
 }
 
@@ -67,26 +58,15 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const categorySlug = searchParams.get('category');
 
-  const entries = Object.entries(PAK_MAP);
+  const slugs = Object.keys(PAK_MAP);
+  const products = await Promise.all(slugs.map((slug) => fetchPlatformProduct(slug, PAK_MAP[slug])));
 
-  const products = await Promise.all(
-    entries.map(([slug, meta]) => fetchPlatformProduct(slug, meta))
-  );
+  const filtered = categorySlug
+    ? products.filter((p) => {
+        const meta = PAK_MAP[p.slug];
+        return meta && meta.category_name.toLowerCase().replace(/\s+/g, '-') === categorySlug;
+      })
+    : products;
 
-  const filtered =
-    categorySlug
-      ? products.filter((p) => {
-          const meta = PAK_MAP[p.slug];
-          if (!meta) return false;
-          const derivedSlug = meta.category_name
-            .toLowerCase()
-            .replace(/\s+/g, '-');
-          return derivedSlug === categorySlug;
-        })
-      : products;
-
-  return NextResponse.json({
-    success: true,
-    data: { data: { products: filtered } },
-  });
+  return NextResponse.json({ success: true, data: { data: { products: filtered } } });
 }

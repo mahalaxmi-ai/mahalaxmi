@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(request, { params }) {
+  const { id } = await params;
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
 
   if (!platformUrl || !pakKey) {
-    return NextResponse.json({ error: 'Service not configured' }, { status: 503 });
+    return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   }
 
   const cookieStore = await cookies();
@@ -16,24 +17,25 @@ export async function GET(request, { params }) {
   }
 
   const userId = request.headers.get('x-user-id') || '';
-  const { id } = await params;
+  const userEmail = request.headers.get('x-user-email') || '';
 
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/vscode-config`, {
       headers: {
-        Authorization: `Bearer ${pakKey}`,
+        'X-Channel-API-Key': pakKey,
         'x-user-id': userId,
+        'x-user-email': userEmail,
       },
       cache: 'no-store',
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'VSCode config unavailable' }, { status: 502 });
+      return NextResponse.json({ error: 'Config unavailable' }, { status: res.status });
     }
 
     const data = await res.json();
-    return NextResponse.json({ deep_link: data.deep_link, config_json: data.config_json });
+    return NextResponse.json(data);
   } catch {
-    return NextResponse.json({ error: 'VSCode config service unreachable' }, { status: 502 });
+    return NextResponse.json({ error: 'Service unreachable' }, { status: 502 });
   }
 }

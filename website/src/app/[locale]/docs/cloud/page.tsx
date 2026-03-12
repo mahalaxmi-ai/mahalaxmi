@@ -1,3 +1,4 @@
+'use client';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
@@ -14,10 +15,6 @@ const codeBlockSx = {
   overflowX: 'auto' as const,
 };
 
-export const metadata = {
-  title: 'Cloud Server Setup | Mahalaxmi Docs',
-  description: 'Provision a Mahalaxmi cloud server, configure your project, and connect VS Code in four steps.',
-};
 
 export default function CloudDocsPage() {
   return (

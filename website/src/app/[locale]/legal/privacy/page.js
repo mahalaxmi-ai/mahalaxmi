@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+'use client';
 import { getAlternateLanguages, getCanonical, getOpenGraphLocale } from '@/utils/i18nMetadata';
 import { locales } from '@/i18n/routing';
 import {
@@ -15,30 +15,6 @@ import {
   Link as MuiLink,
 } from '@mui/material';
 
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
-
-export async function generateMetadata({ params }) {
-  const { locale } = await params;
-
-  return {
-    title: 'Privacy Policy — Mahalaxmi',
-    description:
-      'Privacy Policy for Mahalaxmi Terminal Automation by ThriveTech Services LLC. Learn how we collect, use, store, and protect your information.',
-    alternates: {
-      canonical: getCanonical(locale, '/legal/privacy'),
-      languages: getAlternateLanguages('/legal/privacy'),
-    },
-    openGraph: {
-      title: 'Privacy Policy — Mahalaxmi',
-      description:
-        'Privacy Policy for Mahalaxmi Terminal Automation by ThriveTech Services LLC.',
-      url: '/legal/privacy',
-      locale: getOpenGraphLocale(locale),
-    },
-  };
-}
 
 const sectionHeadingSx = {
   mt: 5,
@@ -88,7 +64,6 @@ function DataTable({ columns, rows }) {
 
 export default async function MahalaxmiPrivacyPage({ params }) {
   const { locale } = await params;
-  setRequestLocale(locale);
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
@@ -229,7 +204,7 @@ export default async function MahalaxmiPrivacyPage({ params }) {
           columns={['Destination', 'Purpose', 'Frequency', 'Data Sent']}
           rows={[
             [
-              'ThriveTech License Server (license.mahalaxmi.ai)',
+              'ThriveTech License Server (license.thrivetechservice.com)',
               'License validation',
               'On app launch, then every 5 minutes',
               'License key, machine fingerprint hash, app version, platform',
@@ -378,7 +353,7 @@ export default async function MahalaxmiPrivacyPage({ params }) {
           10. Cookies and Tracking
         </Typography>
         <Typography variant="body1" paragraph>
-          The Mahalaxmi desktop application does not use cookies, web beacons, or tracking pixels. We do not use any analytics services (such as Google Analytics, Mixpanel, or Amplitude) within the application. The Mahalaxmi website (mahalaxmi.ai) may use essential cookies for site functionality; these are covered by the website&rsquo;s separate cookie notice.
+          The Mahalaxmi desktop application does not use cookies, web beacons, or tracking pixels. We do not use any analytics services (such as Google Analytics, Mixpanel, or Amplitude) within the application. The ThriveTech website (thrivetechservice.com) may use essential cookies for site functionality; these are covered by the website&rsquo;s separate cookie notice.
         </Typography>
 
         {/* Section 11 */}
@@ -456,7 +431,7 @@ export default async function MahalaxmiPrivacyPage({ params }) {
             Email: <MuiLink href="mailto:legal@mahalaxmi.ai">legal@mahalaxmi.ai</MuiLink>
           </Typography>
           <Typography variant="body1">
-            Website: <MuiLink href="https://mahalaxmi.ai" target="_blank" rel="noopener noreferrer">mahalaxmi.ai</MuiLink>
+            Website: <MuiLink href="https://thrivetechservice.com" target="_blank" rel="noopener noreferrer">thrivetechservice.com</MuiLink>
           </Typography>
           <Typography variant="body1">
             For general support: <MuiLink href="mailto:support@mahalaxmi.ai">support@mahalaxmi.ai</MuiLink>

@@ -1,5 +1,7 @@
 # Mahalaxmi runtime project state
 **/.mahalaxmi/
+.mahalaxmi/
+
 node_modules/
 .next/
 .DS_Store

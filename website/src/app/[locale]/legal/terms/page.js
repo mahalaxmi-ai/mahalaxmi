@@ -1,4 +1,4 @@
-import { setRequestLocale } from 'next-intl/server';
+'use client';
 import { getAlternateLanguages, getCanonical, getOpenGraphLocale } from '@/utils/i18nMetadata';
 import { locales } from '@/i18n/routing';
 import {
@@ -9,30 +9,6 @@ import {
   Link as MuiLink,
 } from '@mui/material';
 
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
-
-export async function generateMetadata({ params }) {
-  const { locale } = await params;
-
-  return {
-    title: 'Terms of Service — Mahalaxmi',
-    description:
-      'Terms of Service for Mahalaxmi Terminal Automation by ThriveTech Services LLC.',
-    alternates: {
-      canonical: getCanonical(locale, '/legal/terms'),
-      languages: getAlternateLanguages('/legal/terms'),
-    },
-    openGraph: {
-      title: 'Terms of Service — Mahalaxmi',
-      description:
-        'Terms of Service for Mahalaxmi Terminal Automation by ThriveTech Services LLC.',
-      url: '/legal/terms',
-      locale: getOpenGraphLocale(locale),
-    },
-  };
-}
 
 const sectionHeadingSx = {
   mt: 5,
@@ -62,7 +38,6 @@ const warningBoxSx = {
 
 export default async function MahalaxmiTermsPage({ params }) {
   const { locale } = await params;
-  setRequestLocale(locale);
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 4, md: 6 } }}>
@@ -116,7 +91,7 @@ export default async function MahalaxmiTermsPage({ params }) {
         </Typography>
         <Typography variant="body1" paragraph>
           Mahalaxmi is offered as a subscription service with various tiers. Current plans and pricing are available at{' '}
-          <MuiLink href="https://mahalaxmi.ai/pricing" target="_blank" rel="noopener noreferrer">mahalaxmi.ai/pricing</MuiLink>.
+          <MuiLink href="https://thrivetechservice.com/pricing" target="_blank" rel="noopener noreferrer">thrivetechservice.com/pricing</MuiLink>.
           Features available to you depend on your subscription tier.
         </Typography>
 
@@ -313,7 +288,7 @@ export default async function MahalaxmiTermsPage({ params }) {
             General support: <MuiLink href="mailto:support@mahalaxmi.ai">support@mahalaxmi.ai</MuiLink>
           </Typography>
           <Typography variant="body1">
-            Website: <MuiLink href="https://mahalaxmi.ai" target="_blank" rel="noopener noreferrer">mahalaxmi.ai</MuiLink>
+            Website: <MuiLink href="https://thrivetechservice.com" target="_blank" rel="noopener noreferrer">thrivetechservice.com</MuiLink>
           </Typography>
         </Paper>
 

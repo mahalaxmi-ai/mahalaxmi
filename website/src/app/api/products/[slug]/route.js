@@ -24,7 +24,13 @@ const PAK_MAP = {
   },
 };
 
-export async function GET(_request, { params }) {
+const PRODUCT_NAMES = {
+  'mahalaxmi-ai-terminal-orchestration': 'Mahalaxmi AI Terminal Orchestration',
+  'mahalaxmi-headless-orchestration': 'Mahalaxmi Headless Orchestration',
+  'mahalaxmi-vscode-extension': 'Mahalaxmi VS Code Extension',
+};
+
+export async function GET(request, { params }) {
   const { slug } = await params;
   const meta = PAK_MAP[slug];
 
@@ -33,42 +39,34 @@ export async function GET(_request, { params }) {
   }
 
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
-  const placeholder = {
-    slug,
-    ...meta,
-    key: undefined,
-    is_platform_connected: false,
-    platform_status_message:
-      'Pricing temporarily unavailable. Contact support@mahalaxmi.ai',
-  };
-
-  if (!platformUrl || !meta.key) {
-    return NextResponse.json({ success: true, data: { product: placeholder } });
-  }
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/public/product`, {
       headers: { 'X-Channel-API-Key': meta.key },
-      next: { revalidate: 60 },
+      next: { revalidate: 30 },
     });
-
-    if (!res.ok) {
-      return NextResponse.json({ success: true, data: { product: placeholder } });
-    }
-
-    const platformData = await res.json();
-    const product = {
-      ...platformData,
-      slug,
-      category_id: meta.category_id,
-      category_name: meta.category_name,
-      image: meta.image,
-      is_featured: meta.is_featured,
-      is_platform_connected: true,
-    };
-
-    return NextResponse.json({ success: true, data: { product } });
+    if (!res.ok) throw new Error('Platform error');
+    const data = await res.json();
+    return NextResponse.json({
+      success: true,
+      data: { data: { product: { ...data, slug, ...meta, is_platform_connected: true, data_source: 'platform' } } },
+    });
   } catch {
-    return NextResponse.json({ success: true, data: { product: placeholder } });
+    return NextResponse.json({
+      success: true,
+      data: {
+        data: {
+          product: {
+            slug,
+            ...meta,
+            pricing_options: [],
+            pricing_type: 'unavailable',
+            name: PRODUCT_NAMES[slug] || slug,
+            is_platform_connected: false,
+            data_source: 'placeholder',
+            platform_status_message: 'Pricing temporarily unavailable. Contact support@mahalaxmi.ai',
+          },
+        },
+      },
+    });
   }
 }

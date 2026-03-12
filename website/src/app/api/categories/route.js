@@ -31,5 +31,5 @@ const CATEGORIES = [
 ];
 
 export async function GET() {
-  return NextResponse.json({ success: true, data: { categories: CATEGORIES } });
+  return NextResponse.json({ success: true, data: { data: { categories: CATEGORIES } } });
 }
