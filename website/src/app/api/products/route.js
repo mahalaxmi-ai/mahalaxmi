@@ -64,9 +64,9 @@ export async function GET(request) {
   const filtered = categorySlug
     ? products.filter((p) => {
         const meta = PAK_MAP[p.slug];
-        return meta && meta.category_name.toLowerCase().replace(/\s+/g, '-') === categorySlug;
+        return meta && meta.category_id === categorySlug;
       })
     : products;
 
-  return NextResponse.json({ success: true, data: { data: { products: filtered } } });
+  return NextResponse.json({ data: { products: filtered } });
 }
