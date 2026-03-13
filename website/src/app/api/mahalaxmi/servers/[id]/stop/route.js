@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-// Platform endpoint not yet live — returns 501 until confirmed ready.
 export async function POST(request, { params }) {
   const { id } = await params;
 
@@ -15,25 +14,26 @@ export async function POST(request, { params }) {
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
 
   if (!platformUrl || !pakKey) {
-    return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+    return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   }
 
-  // TODO: remove stub and forward when Platform confirms endpoint is live
-  // const cookieHeader = request.headers.get('cookie') || '';
-  // const userId = request.headers.get('x-user-id') || '';
-  // const userEmail = request.headers.get('x-user-email') || '';
-  // const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/stop`, {
-  //   method: 'POST',
-  //   headers: {
-  //     'X-Channel-API-Key': pakKey,
-  //     'Cookie': cookieHeader,
-  //     'x-user-id': userId,
-  //     'x-user-email': userEmail,
-  //   },
-  // });
-  // if (!res.ok) return NextResponse.json({ error: 'Stop failed' }, { status: res.status });
-  // return NextResponse.json({}, { status: 202 });
+  const cookieHeader = request.headers.get('cookie') || '';
+  const userId = request.headers.get('x-user-id') || '';
+  const userEmail = request.headers.get('x-user-email') || '';
 
-  void id;
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+  try {
+    const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/stop`, {
+      method: 'POST',
+      headers: {
+        'X-Channel-API-Key': pakKey,
+        'Cookie': cookieHeader,
+        'x-user-id': userId,
+        'x-user-email': userEmail,
+      },
+    });
+    if (!res.ok) return NextResponse.json({ error: 'Stop failed' }, { status: res.status });
+    return NextResponse.json({}, { status: 202 });
+  } catch {
+    return NextResponse.json({ error: 'Service unreachable' }, { status: 502 });
+  }
 }
