@@ -15,14 +15,16 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
+  const cookieHeader = request.headers.get('cookie') || '';
   const userId = request.headers.get('x-user-id') || '';
 
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/billing/portal-url`, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${pakKey}`,
+        'X-Channel-API-Key': pakKey,
         'Content-Type': 'application/json',
+        'Cookie': cookieHeader,
         'x-user-id': userId,
       },
       cache: 'no-store',

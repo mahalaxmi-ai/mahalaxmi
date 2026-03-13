@@ -25,14 +25,13 @@ function validateProjectName(value) {
   return null;
 }
 
-export default function ProjectNameModal({ open, serverId, onConfigured, onClose }) {
+export default function ProjectNameModal({ open, serverId, onConfigured, onClose, onRefresh }) {
   const [value, setValue] = useState('');
   const [validationError, setValidationError] = useState(null);
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState(null);
 
   function handleChange(e) {
-    // Force lowercase as user types
     const raw = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
     setValue(raw);
     setValidationError(validateProjectName(raw));
@@ -57,6 +56,19 @@ export default function ProjectNameModal({ open, serverId, onConfigured, onClose
       });
 
       const data = await res.json();
+
+      if (res.status === 409) {
+        if (data.error === 'already_configured') {
+          // Hard error — close modal, refresh list
+          handleClose();
+          if (onRefresh) onRefresh();
+          return;
+        }
+        // name_taken — inline error, stay in modal
+        setApiError('That name is already taken.');
+        setSaving(false);
+        return;
+      }
 
       if (!res.ok) {
         setApiError(data.error || 'Failed to save project name. Please try again.');
