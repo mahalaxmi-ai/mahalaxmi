@@ -52,6 +52,12 @@ export default function BuyNowButton({ tier, billingCycle = 'monthly', cloudProv
         return;
       }
 
+      if (res.status === 403 && data.error === 'verification_required') {
+        alert('Student verification is required before purchasing this tier. Please apply for student pricing first.');
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok || !data.checkout_url) {
         console.error('[BuyNowButton] Checkout error:', data.error);
         alert('Checkout is temporarily unavailable. Please contact support@mahalaxmi.ai');
