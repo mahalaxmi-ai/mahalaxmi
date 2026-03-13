@@ -49,14 +49,15 @@ export async function fetchProductBySlug(slug) {
     const data = await res.json();
     const product = data.product;
     const pricing_options = (product.pricingTiers || []).map((tier) => ({
-      id: tier.id,
-      name: tier.name,
-      description: tier.description,
+      ...tier,
       price: tier.pricing?.primaryPrice ?? tier.pricing?.monthly ?? 0,
       price_period: 'month',
       features: tier.features || [],
       is_popular: !!tier.isPopular,
       trial_enabled: false,
+      displayAnnualPrice: tier.pricing?.yearly
+        ? `${tier.pricing.yearly.toFixed(2)}/yr`
+        : null,
     }));
     return { ...product, pricing_options, slug, ...meta, is_platform_connected: true, data_source: 'platform' };
   } catch {

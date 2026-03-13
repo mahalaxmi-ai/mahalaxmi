@@ -54,6 +54,7 @@ import { useQuery } from '@tanstack/react-query';
 import { releasesAPI } from '@/lib/api';
 import CloudProviderTabs from './CloudProviderTabs';
 import ComingSoonTab from './ComingSoonTab';
+import BuyNowButton from '../../cloud/pricing/BuyNowButton';
 
 const ProductDetailContent = ({ product, slug }) => {
   const router = useRouter();
@@ -606,49 +607,21 @@ const ProductDetailContent = ({ product, slug }) => {
                             </Box>
                           )}
 
-                          <Button
-                            component={
-                              // Lifetime with purchase URL -> external link
-                              option.price_period === 'lifetime' && product.purchase_url
-                                ? 'a'
-                                // Lifetime without URL, seat/year, custom, or no trial -> contact
-                                : option.price_period === 'lifetime' || option.price_period === 'seat/year' || option.price_period === 'custom' || !option.trial_enabled
-                                ? Link
-                                // Trial enabled -> use trial button props
-                                : trialButtonProps.component
-                            }
-                            {...(option.price_period === 'lifetime' && product.purchase_url
-                              ? { href: product.purchase_url, target: '_blank', rel: 'noopener noreferrer' }
-                              : option.price_period === 'lifetime' || option.price_period === 'seat/year' || option.price_period === 'custom' || !option.trial_enabled
-                              ? { href: '/contact' }
-                              : {
-                                  ...(trialButtonProps.href ? { href: trialButtonProps.href } : {}),
-                                  ...(trialButtonProps.target ? { target: trialButtonProps.target, rel: trialButtonProps.rel } : {}),
-                                  ...(trialButtonProps.download ? { download: true } : {}),
-                                }
-                            )}
-                            variant={isPopular ? 'contained' : 'outlined'}
-                            fullWidth
-                            size="large"
-                            endIcon={
-                              option.price_period === 'lifetime' || option.price_period === 'seat/year' || option.price_period === 'custom' || !option.trial_enabled
-                                ? null
-                                : trialButtonProps.icon
-                            }
-                            sx={{
-                              py: 1.5,
-                              fontWeight: 600,
-                              borderRadius: 2,
-                            }}
-                          >
-                            {option.price_period === 'lifetime' && product.purchase_url
-                              ? 'Buy Now'
-                              : option.price_period === 'lifetime' || option.price_period === 'seat/year' || option.price_period === 'custom'
-                              ? 'Contact Sales'
-                              : option.trial_enabled
-                              ? trialButtonProps.text
-                              : 'Subscribe'}
-                          </Button>
+                          {option.isAddon ? (
+                            <button
+                              onClick={() => window.open('https://mahalaxmi.ai/dashboard', '_blank')}
+                              style={{ width: '100%', padding: '12px', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: 'rgba(0,0,0,0.23)', background: 'transparent', fontSize: '0.9375rem' }}
+                            >
+                              Add to my plan
+                            </button>
+                          ) : (
+                            <BuyNowButton
+                              tier={option.slug}
+                              cloudProvider={cloudProvider}
+                              label="Subscribe"
+                              variant={isPopular ? 'contained' : 'outlined'}
+                            />
+                          )}
                         </CardContent>
                       </Card>
                     </Grow>
