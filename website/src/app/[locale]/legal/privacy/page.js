@@ -40,7 +40,7 @@ function DataTable({ columns, rows }) {
         <TableHead>
           <TableRow>
             {columns.map((col) => (
-              <TableCell key={col} sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>
+              <TableCell key={col} sx={{ fontWeight: 600, bgcolor: 'rgba(255,255,255,0.05)' }}>
                 {col}
               </TableCell>
             ))}

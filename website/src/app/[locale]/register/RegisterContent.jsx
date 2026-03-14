@@ -221,7 +221,7 @@ export default function RegisterContent() {
           </Typography>
         </Box>
 
-        <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+        <Box sx={{ p: 2, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 1 }}>
           <Typography variant="body2" color="text.secondary">
             By creating an account you agree to our{' '}
             <MuiLink component={Link} href="/legal/terms" color="primary">Terms of Service</MuiLink>

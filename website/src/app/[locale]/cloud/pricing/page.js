@@ -75,7 +75,7 @@ export default async function MahalaxmiCloudPricingPage({ params }) {
       {pricingData ? (
         <CloudPricingDisplay pricingData={pricingData} />
       ) : (
-        <Box sx={{ py: { xs: 4, md: 8 }, bgcolor: 'grey.50', borderRadius: 4, mb: 6 }}>
+        <Box sx={{ py: { xs: 4, md: 8 }, bgcolor: 'rgba(255,255,255,0.05)', borderRadius: 4, mb: 6 }}>
           <Container maxWidth="md">
             <Box
               sx={{

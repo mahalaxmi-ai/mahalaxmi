@@ -278,7 +278,7 @@ export default async function MahalaxmiFeaturesPage({ params }) {
         <TableContainer component={Paper} elevation={1} sx={{ maxWidth: 480 }}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.100' }}>
+              <TableRow sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}>
                 <TableCell sx={{ fontWeight: 600 }}>Platform</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
               </TableRow>

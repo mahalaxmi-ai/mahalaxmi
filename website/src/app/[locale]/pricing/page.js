@@ -207,7 +207,7 @@ export default async function MahalaxmiPricingPage({ params }) {
         <TableContainer component={Paper} elevation={1}>
           <Table size="small">
             <TableHead>
-              <TableRow sx={{ bgcolor: 'grey.100' }}>
+              <TableRow sx={{ bgcolor: 'rgba(255,255,255,0.08)' }}>
                 <TableCell sx={{ fontWeight: 600, minWidth: 200 }}>Feature</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 600 }}>Trial</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 600, color: 'primary.main' }}>Professional</TableCell>
@@ -216,7 +216,7 @@ export default async function MahalaxmiPricingPage({ params }) {
             </TableHead>
             <TableBody>
               {comparisonRows.map(({ feature, trial, pro, enterprise }) => (
-                <TableRow key={feature} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.50' } }}>
+                <TableRow key={feature} sx={{ '&:nth-of-type(odd)': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
                   <TableCell>{feature}</TableCell>
                   <TableCell align="center"><CellValue value={trial} /></TableCell>
                   <TableCell align="center"><CellValue value={pro} /></TableCell>

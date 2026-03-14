@@ -104,7 +104,7 @@ export default async function MahalaxmiCloudPage({ params }) {
               variant="contained"
               size="large"
               startIcon={<Cloud />}
-              sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' }, fontWeight: 700 }}
+              sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, fontWeight: 700 }}
             >
               See Plans &amp; Launch
             </Button>
@@ -161,7 +161,7 @@ export default async function MahalaxmiCloudPage({ params }) {
       </Box>
 
       {/* Local vs Cloud comparison */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 6, md: 10 } }}>
         <Container maxWidth="md">
           <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 4, textAlign: 'center' }}>
             Local desktop vs. Mahalaxmi Cloud
@@ -177,7 +177,7 @@ export default async function MahalaxmiCloudPage({ params }) {
               </TableHead>
               <TableBody>
                 {localVsCloud.map(([aspect, local, cloud]) => (
-                  <TableRow key={aspect} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.50' } }}>
+                  <TableRow key={aspect} sx={{ '&:nth-of-type(odd)': { bgcolor: 'rgba(255,255,255,0.04)' } }}>
                     <TableCell sx={{ fontWeight: 600 }}>{aspect}</TableCell>
                     <TableCell color="text.secondary">{local}</TableCell>
                     <TableCell sx={{ color: 'success.main', fontWeight: 500 }}>
@@ -217,7 +217,7 @@ export default async function MahalaxmiCloudPage({ params }) {
       </Box>
 
       {/* Server tiers */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 6, md: 10 } }}>
         <Container maxWidth="lg">
           <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>
             Choose your server size
@@ -300,7 +300,7 @@ export default async function MahalaxmiCloudPage({ params }) {
             variant="contained"
             size="large"
             startIcon={<Cloud />}
-            sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'grey.100' }, fontWeight: 700 }}
+            sx={{ bgcolor: 'white', color: 'primary.dark', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, fontWeight: 700 }}
           >
             {lowestPrice != null ? `Launch Your Server — From $${lowestPrice}/mo` : 'See Plans & Launch'}
           </Button>

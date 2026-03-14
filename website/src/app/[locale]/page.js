@@ -113,7 +113,7 @@ export default async function MahalaxmiLandingPage({ params }) {
               variant="contained"
               size="large"
               startIcon={<Download />}
-              sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' }, fontWeight: 700 }}
+              sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, fontWeight: 700 }}
             >
               Download Free — macOS / Windows / Linux
             </Button>
@@ -134,7 +134,7 @@ export default async function MahalaxmiLandingPage({ params }) {
       </Box>
 
       {/* Problem */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 6, md: 10 } }}>
         <Container maxWidth="md" sx={{ textAlign: 'center' }}>
           <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 3 }}>
             You&apos;re paying for AI. You&apos;re using 5% of it.
@@ -170,7 +170,7 @@ export default async function MahalaxmiLandingPage({ params }) {
                   ['Manual retries on failure', 'Self-verification + auto-retry with error context'],
                   ['No oversight structure', 'Plan review, budget gate, file accept/reject'],
                 ].map(([left, right], i) => (
-                  <TableRow key={i} sx={{ '&:nth-of-type(odd)': { bgcolor: 'grey.50' } }}>
+                  <TableRow key={i} sx={{ '&:nth-of-type(odd)': { bgcolor: 'rgba(255,255,255,0.04)' } }}>
                     <TableCell>{left}</TableCell>
                     <TableCell sx={{ color: 'success.main', fontWeight: 500 }}>{right}</TableCell>
                   </TableRow>
@@ -182,7 +182,7 @@ export default async function MahalaxmiLandingPage({ params }) {
       </Box>
 
       {/* How it works */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 6, md: 10 } }}>
         <Container maxWidth="md">
           <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 6, textAlign: 'center' }}>
             How a Mahalaxmi cycle works
@@ -240,7 +240,7 @@ export default async function MahalaxmiLandingPage({ params }) {
       </Box>
 
       {/* Testimonials */}
-      <Box sx={{ bgcolor: 'grey.50', py: { xs: 6, md: 10 } }}>
+      <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 6, md: 10 } }}>
         <Container maxWidth="lg">
           <Typography variant="h4" component="h2" sx={{ fontWeight: 700, mb: 6, textAlign: 'center' }}>
             What engineers say
@@ -383,7 +383,7 @@ export default async function MahalaxmiLandingPage({ params }) {
             variant="contained"
             size="large"
             startIcon={<Download />}
-            sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'grey.100' }, fontWeight: 700 }}
+            sx={{ bgcolor: 'white', color: 'primary.main', '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' }, fontWeight: 700 }}
           >
             Download Mahalaxmi — Free
           </Button>

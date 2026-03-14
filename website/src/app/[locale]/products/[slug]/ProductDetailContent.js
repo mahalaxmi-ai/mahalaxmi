@@ -283,7 +283,7 @@ const ProductDetailContent = ({ product, slug }) => {
                             py: 1.5,
                             fontWeight: 600,
                             '&:hover': {
-                              bgcolor: 'grey.100',
+                              bgcolor: 'rgba(255,255,255,0.08)',
                             },
                           }}
                         >
@@ -322,7 +322,7 @@ const ProductDetailContent = ({ product, slug }) => {
                           py: 1.5,
                           fontWeight: 600,
                           '&:hover': {
-                            bgcolor: 'grey.100',
+                            bgcolor: 'rgba(255,255,255,0.08)',
                           },
                         }}
                       >
@@ -467,7 +467,7 @@ const ProductDetailContent = ({ product, slug }) => {
 
       {/* Pricing Section - Only show if product is active and has pricing options */}
       {showPricing ? (
-        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'grey.50' }}>
+        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'rgba(255,255,255,0.05)' }}>
           <Container maxWidth="lg">
 
             <CloudProviderTabs onProviderChange={setCloudProvider} />
@@ -649,7 +649,7 @@ const ProductDetailContent = ({ product, slug }) => {
                       {pricingOptions
                         .find(p => p.volume_discounts?.length > 0)
                         ?.volume_discounts.map((tier, idx) => (
-                          <TableRow key={idx} sx={{ '&:hover': { bgcolor: 'grey.50' } }}>
+                          <TableRow key={idx} sx={{ '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
                             <TableCell sx={{ fontWeight: 500 }}>
                               {tier.maxSeats ? `${tier.minSeats}-${tier.maxSeats}` : `${tier.minSeats}+`}
                             </TableCell>
@@ -678,7 +678,7 @@ const ProductDetailContent = ({ product, slug }) => {
         </Box>
       ) : showContactSupport ? (
         /* Contact Support Section - Product inactive or platform unavailable */
-        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'grey.50' }}>
+        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'rgba(255,255,255,0.05)' }}>
           <Container maxWidth="md">
             <Box
               sx={{
@@ -753,7 +753,7 @@ const ProductDetailContent = ({ product, slug }) => {
         </Box>
       ) : (
         /* Contact Us Section for services without pricing (intentionally contact-only) */
-        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'grey.50' }}>
+        <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'rgba(255,255,255,0.05)' }}>
           <Container maxWidth="md">
             <Box
               sx={{
@@ -833,7 +833,7 @@ const ProductDetailContent = ({ product, slug }) => {
 
       {/* Benefits Section */}
       {product.benefits && product.benefits.length > 0 && (
-        <Box sx={{ bgcolor: 'grey.50', py: { xs: 8, md: 12 } }}>
+        <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 8, md: 12 } }}>
           <Container maxWidth="lg">
             <Typography variant="h2" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>
               Why Choose {product.name}?
@@ -934,7 +934,7 @@ const ProductDetailContent = ({ product, slug }) => {
 
       {/* FAQs Section */}
       {product.faqs && product.faqs.length > 0 && (
-        <Box sx={{ bgcolor: 'grey.50', py: { xs: 8, md: 12 } }}>
+        <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', py: { xs: 8, md: 12 } }}>
           <Container maxWidth="lg">
             <Typography variant="h2" sx={{ fontWeight: 700, mb: 2, textAlign: 'center' }}>
               Frequently Asked Questions
@@ -1033,7 +1033,7 @@ const ProductDetailContent = ({ product, slug }) => {
                   px: 5,
                   py: 1.5,
                   fontWeight: 600,
-                  '&:hover': { bgcolor: 'grey.100' },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
                 }}
               >
                 Contact Support
@@ -1053,7 +1053,7 @@ const ProductDetailContent = ({ product, slug }) => {
                   px: 5,
                   py: 1.5,
                   fontWeight: 600,
-                  '&:hover': { bgcolor: 'grey.100' },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
                 }}
               >
                 {trialButtonProps.text}

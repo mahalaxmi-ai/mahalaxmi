@@ -149,7 +149,7 @@ export default async function MahalaxmiUseCasesPage({ params }) {
 
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
-                    <Box sx={{ bgcolor: 'grey.50', p: 2.5, borderRadius: 1, height: '100%' }}>
+                    <Box sx={{ bgcolor: 'rgba(255,255,255,0.05)', p: 2.5, borderRadius: 1, height: '100%' }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'text.secondary', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
                         The Scenario
                       </Typography>
@@ -157,7 +157,7 @@ export default async function MahalaxmiUseCasesPage({ params }) {
                     </Box>
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <Box sx={{ bgcolor: 'primary.50', p: 2.5, borderRadius: 1, height: '100%', borderLeft: '3px solid', borderColor: 'primary.main' }}>
+                    <Box sx={{ bgcolor: 'rgba(0,200,200,0.07)', p: 2.5, borderRadius: 1, height: '100%', borderLeft: '3px solid', borderColor: 'primary.main' }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: 'primary.main', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: 1 }}>
                         With Mahalaxmi
                       </Typography>
