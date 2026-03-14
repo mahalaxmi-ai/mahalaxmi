@@ -13,7 +13,7 @@ export async function POST(request) {
     backendRes = await fetch(`${process.env.MAHALAXMI_AUTH_API_URL}/v1/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, clientId: 'mahalaxmi' }),
     });
     data = await backendRes.json();
   } catch {
