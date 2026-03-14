@@ -1,40 +1,25 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { getUserToken, jwtHeaders, unauthorizedResponse } from '@/lib/proxyHelpers';
 
-export async function GET() {
+export async function GET(request) {
+  const token = getUserToken(request);
+  if (!token) return unauthorizedResponse();
+
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
-  const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
+  if (!platformUrl) return Response.json({ error: 'Not configured' }, { status: 503 });
 
-  if (!platformUrl || !pakKey) {
-    return NextResponse.json({ error: 'Not configured' }, { status: 503 });
+  const platformRes = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers`, {
+    headers: jwtHeaders(token),
+    cache: 'no-store',
+  }).catch(() => null);
+
+  if (!platformRes) return Response.json({ error: 'Service unreachable' }, { status: 502 });
+
+  if (!platformRes.ok) {
+    const errorBody = await platformRes.text();
+    console.error(`[servers] platform error ${platformRes.status}`, errorBody);
+    return Response.json({ error: 'platform_error', detail: errorBody }, { status: platformRes.status });
   }
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get('mahalaxmi_token')?.value;
-  if (!token) {
-    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-  }
-
-  try {
-    const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(`[servers] platform error ${res.status}`, errorBody);
-      return NextResponse.json(
-        { error: 'failed_to_load_servers', detail: errorBody },
-        { status: res.status }
-      );
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch {
-    return NextResponse.json({ error: 'Service unreachable' }, { status: 502 });
-  }
+  const data = await platformRes.json();
+  return Response.json(data);
 }
