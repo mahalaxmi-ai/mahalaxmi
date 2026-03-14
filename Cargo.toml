@@ -9,6 +9,7 @@ members = [
     "crates/mahalaxmi-memory",
     "crates/mahalaxmi-indexing",
     "crates/mahalaxmi-cli",
+    "examples",
 ]
 
 [workspace.package]
@@ -53,3 +54,4 @@ keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 tempfile = "3"
 petgraph = "0.6"
 aes-gcm = "0.10"
+futures-util = "0.3"
