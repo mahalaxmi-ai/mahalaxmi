@@ -1,6 +1,3 @@
-'use client';
-import { getAlternateLanguages, getCanonical, getOpenGraphLocale } from '@/utils/i18nMetadata';
-import { locales } from '@/i18n/routing';
 import {
   Container, Box, Typography, Paper, Grid, Card, CardContent,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
