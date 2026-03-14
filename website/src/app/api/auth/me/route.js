@@ -10,7 +10,7 @@ function parseJwt(token) {
 }
 
 function isTokenExpired(payload) {
-  if (!payload?.exp) return true;
+  if (!payload?.exp) return false; // no exp claim — don't assume expired
   return Math.floor(Date.now() / 1000) >= payload.exp;
 }
 
