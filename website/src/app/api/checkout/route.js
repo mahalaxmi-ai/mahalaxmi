@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+function getUserEmailFromToken(token) {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+    return payload.user?.email || payload.email || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET() {
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
@@ -34,7 +43,6 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Checkout not configured' }, { status: 503 });
   }
 
-  const cookieHeader = request.headers.get('cookie') || '';
   const cookieStore = await cookies();
   const token = cookieStore.get('mahalaxmi_token')?.value;
   if (!token) {
@@ -48,7 +56,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
 
-  const { tier, billing_cycle, cloud_provider, success_url, cancel_url } = body;
+  const { tier, billing_cycle, email: bodyEmail, success_url, cancel_url } = body;
   if (!tier || !success_url || !cancel_url) {
     return NextResponse.json(
       { error: 'Missing required fields: tier, success_url, cancel_url' },
@@ -57,20 +65,17 @@ export async function POST(request) {
   }
 
   const billingCycle = billing_cycle === 'annual' ? 'annual' : 'monthly';
-  const cloudProvider = cloud_provider || 'hetzner';
-
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
+  const userEmail = getUserEmailFromToken(token) || bodyEmail || '';
 
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/checkout/session`, {
       method: 'POST',
       headers: {
-        'X-Channel-API-Key': pakKey,
+        'Authorization': `Bearer ${pakKey}`,
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'X-User-Email': userEmail,
       },
-      body: JSON.stringify({ tier, billing_cycle: billingCycle, cloud_provider: cloudProvider, success_url, cancel_url }),
+      body: JSON.stringify({ tier, billing_cycle: billingCycle, email: userEmail, success_url, cancel_url }),
     });
 
     const data = await res.json();
