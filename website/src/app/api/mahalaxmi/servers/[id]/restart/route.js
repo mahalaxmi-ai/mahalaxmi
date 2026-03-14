@@ -17,21 +17,19 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: 'Not configured' }, { status: 503 });
   }
 
-  const cookieHeader = request.headers.get('cookie') || '';
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/restart`, {
       method: 'POST',
       headers: {
-        'X-Channel-API-Key': pakKey,
-        'Cookie': cookieHeader,
-        'x-user-id': userId,
-        'x-user-email': userEmail,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
-    if (!res.ok) return NextResponse.json({ error: 'Restart failed' }, { status: res.status });
+    if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`[servers/${id}/restart] platform error ${res.status}`, errorBody);
+      return NextResponse.json({ error: 'Restart failed' }, { status: res.status });
+    }
     return NextResponse.json({}, { status: 202 });
   } catch {
     return NextResponse.json({ error: 'Service unreachable' }, { status: 502 });

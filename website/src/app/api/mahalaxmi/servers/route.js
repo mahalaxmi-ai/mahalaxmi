@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET(request) {
+export async function GET() {
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
 
@@ -15,21 +15,21 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers`, {
       headers: {
-        'X-Channel-API-Key': pakKey,
-        'x-user-id': userId,
-        'x-user-email': userEmail,
+        'Authorization': `Bearer ${token}`,
       },
       cache: 'no-store',
     });
 
     if (!res.ok) {
-      return NextResponse.json({ error: 'Servers unavailable' }, { status: 502 });
+      const errorBody = await res.text();
+      console.error(`[servers] platform error ${res.status}`, errorBody);
+      return NextResponse.json(
+        { error: 'failed_to_load_servers', detail: errorBody },
+        { status: res.status }
+      );
     }
 
     const data = await res.json();

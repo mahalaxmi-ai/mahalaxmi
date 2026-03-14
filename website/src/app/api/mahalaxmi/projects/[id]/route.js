@@ -16,20 +16,18 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/projects/${id}`, {
       method: 'DELETE',
       headers: {
-        'X-Channel-API-Key': pakKey,
-        'x-user-id': userId,
-        'x-user-email': userEmail,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`[projects/${id}] platform error ${res.status}`, errorBody);
       return NextResponse.json({ error: 'Delete failed' }, { status: res.status });
     }
 

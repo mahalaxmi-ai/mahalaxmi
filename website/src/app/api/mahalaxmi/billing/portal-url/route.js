@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function POST(request) {
+export async function POST() {
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   const pakKey = process.env.MAHALAXMI_CLOUD_PAK_KEY;
 
@@ -15,22 +15,19 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const cookieHeader = request.headers.get('cookie') || '';
-  const userId = request.headers.get('x-user-id') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/billing/portal-url`, {
       method: 'POST',
       headers: {
-        'X-Channel-API-Key': pakKey,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-        'x-user-id': userId,
       },
       cache: 'no-store',
     });
 
     if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`[billing/portal-url] platform error ${res.status}`, errorBody);
       return NextResponse.json({ error: 'Billing portal unavailable' }, { status: 502 });
     }
 

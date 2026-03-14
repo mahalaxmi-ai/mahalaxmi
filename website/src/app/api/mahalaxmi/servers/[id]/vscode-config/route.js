@@ -16,20 +16,17 @@ export async function GET(request, { params }) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
 
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/vscode-config`, {
       headers: {
-        'X-Channel-API-Key': pakKey,
-        'x-user-id': userId,
-        'x-user-email': userEmail,
+        'Authorization': `Bearer ${token}`,
       },
       cache: 'no-store',
     });
 
     if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`[servers/${id}/vscode-config] platform error ${res.status}`, errorBody);
       return NextResponse.json({ error: 'Config unavailable' }, { status: res.status });
     }
 

@@ -28,17 +28,12 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'project_name is required' }, { status: 400 });
   }
 
-  const userId = request.headers.get('x-user-id') || '';
-  const userEmail = request.headers.get('x-user-email') || '';
-
   try {
     const res = await fetch(`${platformUrl}/api/v1/mahalaxmi/servers/${id}/configure`, {
       method: 'PATCH',
       headers: {
-        'X-Channel-API-Key': pakKey,
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
-        'x-user-id': userId,
-        'x-user-email': userEmail,
       },
       body: JSON.stringify({ project_name }),
     });
@@ -49,6 +44,8 @@ export async function PATCH(request, { params }) {
     }
 
     if (!res.ok) {
+      const errorBody = await res.text();
+      console.error(`[servers/${id}/configure] platform error ${res.status}`, errorBody);
       return NextResponse.json({ error: 'Configuration failed' }, { status: 502 });
     }
 
