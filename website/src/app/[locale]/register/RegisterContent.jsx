@@ -7,6 +7,7 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, CheckCircleOutline } from '@mui/icons-material';
 import { Link } from '@/i18n/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterContent() {
@@ -24,6 +25,9 @@ export default function RegisterContent() {
   const [registeredEmail, setRegisteredEmail] = useState('');
 
   const { register } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get('redirect');
+  const loginHref = redirectParam ? `/login?redirect=${encodeURIComponent(redirectParam)}` : '/login';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -97,7 +101,7 @@ export default function RegisterContent() {
               </MuiLink>
             </Typography>
           </Alert>
-          <Button component={Link} href="/login" variant="contained" size="large" fullWidth>
+          <Button component={Link} href={loginHref} variant="contained" size="large" fullWidth>
             Go to Login
           </Button>
         </Paper>
@@ -210,7 +214,7 @@ export default function RegisterContent() {
         <Box sx={{ textAlign: 'center', mb: 2 }}>
           <Typography variant="body2" color="text.secondary">
             Already have an account?{' '}
-            <MuiLink component={Link} href="/login" color="primary">
+            <MuiLink component={Link} href={loginHref} color="primary">
               Sign in here
             </MuiLink>
           </Typography>
