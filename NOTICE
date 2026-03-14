@@ -1,0 +1,18 @@
+Mahalaxmi Terminal Orchestration
+Copyright 2026 ThriveTech Services LLC. All rights reserved.
+
+Mahalaxmi™ is a trademark of ThriveTech Services LLC,
+registered in the United States and other countries.
+
+The Mahalaxmi name and logo may not be used to endorse, promote,
+or identify products derived from this software without prior
+written permission from ThriveTech Services LLC.
+
+This repository contains the open source foundation layer of
+Mahalaxmi, licensed under the MIT License. The full Mahalaxmi
+product is proprietary software available at https://mahalaxmi.ai
+
+Third-party attributions:
+- tree-sitter — MIT License — https://github.com/tree-sitter/tree-sitter
+- tokio — MIT License — https://github.com/tokio-rs/tokio
+- tauri — MIT/Apache-2.0 — https://tauri.app
