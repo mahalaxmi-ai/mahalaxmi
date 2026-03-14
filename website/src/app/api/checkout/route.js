@@ -68,18 +68,16 @@ export async function POST(request) {
       headers: {
         'X-Channel-API-Key': pakKey,
         'Content-Type': 'application/json',
-        'Cookie': cookieHeader,
-        'x-user-id': userId,
-        'x-user-email': userEmail,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ tier, billing_cycle: billingCycle, cloud_provider: cloudProvider, success_url, cancel_url }),
     });
 
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Checkout unavailable' }, { status: 502 });
-    }
-
     const data = await res.json();
+    if (!res.ok) {
+      console.error('[checkout] platform error', res.status, data);
+      return NextResponse.json({ error: data.message || data.error || 'Checkout unavailable' }, { status: 502 });
+    }
     return NextResponse.json({ checkout_url: data.checkout_url });
   } catch {
     return NextResponse.json({ error: 'Checkout service unreachable' }, { status: 502 });
