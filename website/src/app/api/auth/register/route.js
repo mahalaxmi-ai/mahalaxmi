@@ -8,7 +8,7 @@ export async function POST(request) {
     backendRes = await fetch(`${process.env.MAHALAXMI_AUTH_API_URL}/v1/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, verificationBaseUrl: 'https://mahalaxmi.ai' }),
     });
     data = await backendRes.json();
   } catch {
