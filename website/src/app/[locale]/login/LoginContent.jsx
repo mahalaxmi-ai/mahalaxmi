@@ -85,6 +85,7 @@ export default function LoginContent() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            InputLabelProps={{ shrink: !!email }}
             sx={{ mb: 3 }}
           />
 
@@ -96,6 +97,7 @@ export default function LoginContent() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
+            InputLabelProps={{ shrink: !!password }}
             sx={{ mb: 1 }}
             InputProps={{
               endAdornment: (
