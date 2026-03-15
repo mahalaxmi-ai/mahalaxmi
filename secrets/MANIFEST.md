@@ -4,25 +4,18 @@
 
 | Encrypted file | Decrypted target path | Purpose |
 |---|---|---|
-| `.env.enc` | `/opt/deployments/mahalaxmi-website/.env` | All service environment variables |
+| `.env.prod.enc` | `/opt/deployments/mahalaxmi-website/website/.env.prod` | Production env vars |
 
-## Secret variables in .env
-
-Based on the audit of `.env.example` files found in this repo:
+## Secret variables in .env.prod
 
 | Variable | Purpose |
 |---|---|
-| NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY | Stripe publishable key for client-side |
-| STRIPE_SECRET_KEY | Stripe secret key for server-side |
-| STRIPE_WEBHOOK_SECRET | Stripe webhook signing secret |
-| MAHALAXMI_CLOUD_PAK_KEY | Mahalaxmi cloud channel provisioning key |
-| NEXTAUTH_SECRET | NextAuth.js session signing secret |
-| NEXTAUTH_URL | Canonical URL for NextAuth callbacks |
-| DATABASE_URL | PostgreSQL connection string |
-| GHCR_PULL_TOKEN | GitHub PAT for pulling private Docker images |
-| CLOUDFLARE_API_TOKEN | Cloudflare DNS API token |
-| SMTP_USER | SMTP credentials for email |
-| SMTP_PASSWORD | SMTP password |
+| `MAHALAXMI_AUTH_API_URL` | Mahalaxmi auth API endpoint |
+| `MAHALAXMI_PLATFORM_API_URL` | Mahalaxmi platform API endpoint |
+| `MAHALAXMI_ACTIVATION_API_URL` | Mahalaxmi activation API endpoint |
+| `MAHALAXMI_CLOUD_PAK_KEY` | Mahalaxmi cloud channel PAK (live) |
+| `MAHALAXMI_TERMINAL_PAK_KEY` | Mahalaxmi terminal channel PAK (live) |
+| `MAHALAXMI_VSCODE_PAK_KEY` | Mahalaxmi VS Code extension PAK (live) |
 
 ## How to decrypt
 
@@ -39,6 +32,8 @@ bash scripts/encrypt-secrets.sh
 ## Key location
 
 The age private key lives at:
-- Server: `/root/.config/sops/age/keys.txt`
-- Local: `~/.config/sops/age/keys.txt`
-- Backup: stored in ThriveTech password manager under "SOPS age key"
+- **Server:** `/root/.config/sops/age/keys.txt`
+- **Local:** `~/.config/sops/age/keys.txt`
+- **Backup:** stored in ThriveTech password manager under "SOPS age key"
+
+Public key: `age1sd79y4wfft3jmsr68eaaq53ay2fq4kkeu99harytmpa4cud06e6q3xm320`
