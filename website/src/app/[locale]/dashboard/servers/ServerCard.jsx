@@ -14,7 +14,11 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormControl,
+  InputLabel,
   LinearProgress,
+  MenuItem,
+  Select,
   Typography,
 } from '@mui/material';
 import { Code, Delete, Pause, PlayArrow, Settings } from '@mui/icons-material';
@@ -72,6 +76,19 @@ function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', danger 
       </DialogActions>
     </Dialog>
   );
+}
+
+// ── Timeout helpers ───────────────────────────────────────────────────────────
+function generateTimeoutOptions(min, max) {
+  const steps = [15, 30, 60, 120, 180, 240, 360, 480, 720, 1440];
+  return steps
+    .filter(mins => mins >= min && mins <= max)
+    .map(mins => ({
+      value: mins,
+      label: mins < 60
+        ? `${mins} minutes`
+        : `${mins / 60} hour${mins / 60 > 1 ? 's' : ''}`,
+    }));
 }
 
 export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user }) {
@@ -189,6 +206,25 @@ export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user
     }
   }
 
+  // ── Timeout update ──────────────────────────────────────────────────────────
+  async function handleTimeoutUpdate(serverId, minutes) {
+    const mins = parseInt(minutes);
+    onOptimisticUpdate(serverId, {
+      timeout_config: { ...server.timeout_config, user_override_minutes: mins },
+    });
+    try {
+      const res = await fetch(`/api/mahalaxmi/servers/${serverId}/timeout`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idle_timeout_minutes: mins }),
+      });
+      if (!res.ok) throw new Error('Failed to update timeout');
+    } catch (err) {
+      console.error('Timeout update failed:', err);
+      onRefresh();
+    }
+  }
+
   function handleConfigured({ project_name, fqdn }) {
     setConfigureOpen(false);
     onOptimisticUpdate(server.id, { project_name, fqdn, is_configured: true });
@@ -294,6 +330,30 @@ export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user
               Provisioning failed. Contact{' '}
               <a href="mailto:support@mahalaxmi.ai">support@mahalaxmi.ai</a>
             </Alert>
+          )}
+
+          {/* Timeout selector — active servers with timeout_config only */}
+          {status === 'active' && server.timeout_config && (
+            <FormControl size="small" fullWidth sx={{ mb: 1.5 }}>
+              <InputLabel id={`timeout-label-${server.id}`}>Auto-stop after inactivity</InputLabel>
+              <Select
+                labelId={`timeout-label-${server.id}`}
+                id={`timeout-${server.id}`}
+                label="Auto-stop after inactivity"
+                value={
+                  server.timeout_config.user_override_minutes
+                  ?? server.timeout_config.current_idle_timeout_minutes
+                }
+                onChange={(e) => handleTimeoutUpdate(server.id, e.target.value)}
+              >
+                {generateTimeoutOptions(
+                  server.timeout_config.min_allowed_minutes,
+                  server.timeout_config.max_allowed_minutes,
+                ).map(opt => (
+                  <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           )}
 
           {/* Configure button — shown when not yet configured (and not terminal/pending states) */}
