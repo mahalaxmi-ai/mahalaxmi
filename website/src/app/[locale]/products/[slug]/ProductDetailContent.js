@@ -591,21 +591,50 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
                             </Box>
                           )}
 
-                          {option.isAddon ? (
-                            <button
-                              onClick={() => window.open('https://mahalaxmi.ai/dashboard', '_blank')}
-                              style={{ width: '100%', padding: '12px', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: 'rgba(0,0,0,0.23)', background: 'transparent', fontSize: '0.9375rem' }}
-                            >
-                              Add to my plan
-                            </button>
-                          ) : (
-                            <BuyNowButton
-                              tier={option.slug}
-                              cloudProvider={cloudProvider}
-                              label="Subscribe"
-                              variant={isPopular ? 'contained' : 'outlined'}
-                            />
-                          )}
+                          {(() => {
+                            const ctaAction = option.cta_action ?? option.ctaAction;
+                            const ctaLabel  = option.cta_label  ?? option.ctaLabel ?? option.name ?? 'Get started';
+                            const variant   = isPopular ? 'contained' : 'outlined';
+                            if (ctaAction === 'download') {
+                              return (
+                                <Button component={Link} href="/download" variant={variant} fullWidth sx={{ fontWeight: 600 }}>
+                                  {ctaLabel}
+                                </Button>
+                              );
+                            }
+                            if (ctaAction === 'contact') {
+                              return (
+                                <Button component={Link} href="/contact" variant={variant} fullWidth sx={{ fontWeight: 600 }}>
+                                  {ctaLabel}
+                                </Button>
+                              );
+                            }
+                            if (ctaAction === 'verify') {
+                              return (
+                                <Button component={Link} href="/contact?subject=student-license" variant={variant} fullWidth sx={{ fontWeight: 600 }}>
+                                  {ctaLabel}
+                                </Button>
+                              );
+                            }
+                            if (ctaAction === 'addon' || option.isAddon) {
+                              return (
+                                <button
+                                  onClick={() => window.open('https://mahalaxmi.ai/dashboard', '_blank')}
+                                  style={{ width: '100%', padding: '12px', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: '1px solid', borderColor: 'rgba(0,0,0,0.23)', background: 'transparent', fontSize: '0.9375rem' }}
+                                >
+                                  Add to my plan
+                                </button>
+                              );
+                            }
+                            // checkout (or unknown) — use BuyNowButton
+                            return (
+                              <BuyNowButton
+                                tier={option.slug ?? option.id}
+                                label={ctaLabel}
+                                variant={variant}
+                              />
+                            );
+                          })()}
                         </CardContent>
                       </Card>
                     </Grow>
