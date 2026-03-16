@@ -57,7 +57,7 @@ export async function fetchProductBySlug(slug) {
       slug,
       pricing_options: [],
       pricing_type: 'unavailable',
-      name: product?.name ?? slug,
+      name: slug,
       image: '/mahalaxmi_logo.png',
       short_description: 'AI orchestration platform by ThriveTech Services LLC.',
       is_platform_connected: false,
