@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import {
   Box, Button, Container, Divider, Typography,
 } from '@mui/material';

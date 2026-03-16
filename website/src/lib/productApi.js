@@ -37,7 +37,7 @@ async function fetchLatestRelease(platform) {
     const url = `${PLATFORM_API_URL}/api/v1/public/releases/latest?platform=${platform}`;
     const res = await fetch(url, {
       headers: { 'X-Channel-API-Key': TERMINAL_PAK_KEY },
-      next: { revalidate: 300 },
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -54,27 +54,24 @@ async function fetchLatestRelease(platform) {
 }
 
 export async function getDownloads() {
-  let downloads = {};
-  try {
-    const offering = await getDesktopProductOffering();
-    downloads = offering.downloads ?? {};
-  } catch {}
+  const [linux, windows, macos] = await Promise.all([
+    fetchLatestRelease('linux'),
+    fetchLatestRelease('windows'),
+    fetchLatestRelease('macos'),
+  ]);
 
-  // If the offering has no desktop download URLs, fetch directly from releases API
-  const desktopApp = downloads.desktop_app ?? {};
-  if (Object.keys(desktopApp).length === 0) {
-    const [linux, windows, macos] = await Promise.all([
-      fetchLatestRelease('linux'),
-      fetchLatestRelease('windows'),
-      fetchLatestRelease('macos'),
-    ]);
-    if (linux)   desktopApp.linux_deb        = linux;
-    if (windows) desktopApp.windows_exe      = windows;
-    if (macos)   desktopApp.macos_dmg        = macos;
-    downloads.desktop_app = desktopApp;
-  }
+  const desktop_app = {};
+  if (linux)   desktop_app.linux_deb   = linux;
+  if (windows) desktop_app.windows_exe = windows;
+  if (macos)   desktop_app.macos_dmg   = macos;
 
-  return downloads;
+  // Also get latest_version from any successful release
+  const anyRelease = linux || windows || macos;
+
+  return {
+    desktop_app,
+    latest_version: anyRelease?.version ?? null,
+  };
 }
 
 // Cloud-scoped helpers
