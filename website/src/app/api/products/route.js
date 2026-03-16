@@ -32,15 +32,23 @@ const CATEGORY_SLUGS = {
   'vscode-extension':       ['mahalaxmi-vscode-extension'],
 };
 
-const PRODUCT_NAMES = {
-  'mahalaxmi-ai-terminal-orchestration':     'Mahalaxmi AI Terminal Orchestration',
-  'mahalaxmi-ai-terminal-orchestration-pro': 'Mahalaxmi AI Terminal Orchestration Pro',
-  'mahalaxmi-headless-orchestration':        'Mahalaxmi Headless Orchestration',
-  'mahalaxmi-vscode-extension':              'Mahalaxmi VS Code Extension',
+// Per-slug display overrides applied on top of platform data
+const PRODUCT_OVERRIDES = {
+  'mahalaxmi-ai-terminal-orchestration': {
+    name: 'Mahalaxmi Terminal — Free',
+    short_description: 'Run up to 2 parallel AI workers locally. No credit card required. Bring your own AI keys.',
+    always_downloadable: true,
+  },
+  'mahalaxmi-ai-terminal-orchestration-pro': {
+    name: 'Mahalaxmi Terminal — Pro',
+    short_description: 'Unlimited parallel AI workers, offline licensing, and priority support. Includes 30-day free trial.',
+    always_downloadable: true,
+  },
 };
 
 async function fetchPlatformProduct(slug, meta) {
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
+  const overrides = PRODUCT_OVERRIDES[slug] || {};
   try {
     const res = await fetch(`${platformUrl}/api/v1/public/product`, {
       headers: { 'X-Channel-API-Key': meta.key },
@@ -48,7 +56,16 @@ async function fetchPlatformProduct(slug, meta) {
     });
     if (!res.ok) throw new Error('Platform error');
     const data = await res.json();
-    return { ...data, slug, image: meta.image, is_featured: meta.is_featured, is_platform_connected: true, data_source: 'platform' };
+    const product = data.product || data;
+    return {
+      ...product,
+      ...overrides,
+      slug,
+      image: meta.image,
+      is_featured: meta.is_featured,
+      is_platform_connected: true,
+      data_source: 'platform',
+    };
   } catch {
     return {
       slug,
@@ -56,10 +73,12 @@ async function fetchPlatformProduct(slug, meta) {
       is_featured: meta.is_featured,
       pricing_options: [],
       pricing_type: 'unavailable',
-      name: PRODUCT_NAMES[slug] || slug,
+      name: overrides.name || slug,
+      short_description: overrides.short_description || 'AI orchestration platform by ThriveTech Services LLC.',
+      always_downloadable: overrides.always_downloadable ?? false,
       is_platform_connected: false,
       data_source: 'placeholder',
-      platform_status_message: 'Pricing temporarily unavailable. Contact support@mahalaxmi.ai',
+      platform_status_message: 'Temporarily unavailable. Contact support@mahalaxmi.ai',
     };
   }
 }

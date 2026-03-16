@@ -10,11 +10,22 @@ const PAK_MAP = {
   'mahalaxmi-vscode-extension':              process.env.MAHALAXMI_VSCODE_PAK_KEY,
 };
 
-// Desktop/terminal products are native apps — all tiers use Download CTA
+// Desktop/terminal products are native apps — all tiers use Download CTA, always downloadable
 const DOWNLOAD_CTA_SLUGS = new Set([
   'mahalaxmi-ai-terminal-orchestration',
   'mahalaxmi-ai-terminal-orchestration-pro',
 ]);
+
+const PRODUCT_OVERRIDES = {
+  'mahalaxmi-ai-terminal-orchestration': {
+    name: 'Mahalaxmi Terminal — Free',
+    short_description: 'Run up to 2 parallel AI workers locally. No credit card required. Bring your own AI keys.',
+  },
+  'mahalaxmi-ai-terminal-orchestration-pro': {
+    name: 'Mahalaxmi Terminal — Pro',
+    short_description: 'Unlimited parallel AI workers, offline licensing, and priority support. Includes 30-day free trial.',
+  },
+};
 
 export async function getProductMetadata(slug) {
   const meta = await getProductMeta();
@@ -38,7 +49,8 @@ export async function fetchProductBySlug(slug) {
     });
     if (!res.ok) throw new Error();
     const data = await res.json();
-    const product = data.product;
+    const product = data.product || data;
+    const overrides = PRODUCT_OVERRIDES[slug] || {};
     const forceDownload = DOWNLOAD_CTA_SLUGS.has(slug);
     const pricing_options = (product.pricingTiers || []).map((tier) => ({
       ...tier,
@@ -54,12 +66,14 @@ export async function fetchProductBySlug(slug) {
     }));
     return {
       ...product,
+      ...overrides,
       pricing_options,
       slug,
       image:      product.logo_url ?? '/mahalaxmi_logo.png',
       is_featured: product.is_featured ?? true,
       is_platform_connected: true,
       data_source: 'platform',
+      always_downloadable: DOWNLOAD_CTA_SLUGS.has(slug),
     };
   } catch {
     return {

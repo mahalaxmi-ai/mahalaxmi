@@ -67,8 +67,9 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
     retry: false,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  const releasesAvailable = releaseData?.data?.success === true;
+  const releasesAvailable = releaseData?.data?.success === true || !!product.always_downloadable;
 
+  const isHeadlessProduct = slug === 'mahalaxmi-headless-orchestration';
   const [cloudProvider, setCloudProvider] = useState('hetzner');
 
   const pricingOptions = product.pricing_options || [];
@@ -454,9 +455,11 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
         <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'rgba(255,255,255,0.05)' }}>
           <Container maxWidth="lg">
 
-            <CloudProviderTabs onProviderChange={setCloudProvider} providerLabels={providerLabels} />
+            {isHeadlessProduct && (
+              <CloudProviderTabs onProviderChange={setCloudProvider} providerLabels={providerLabels} />
+            )}
 
-            {cloudProvider === 'hetzner' ? (
+            {!isHeadlessProduct || cloudProvider === 'hetzner' ? (
               <>
             <Grid container spacing={3} justifyContent="center">
               {pricingOptions.map((option, index) => {
