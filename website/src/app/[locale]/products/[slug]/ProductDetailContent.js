@@ -597,8 +597,9 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
                             const ctaLabel  = option.cta_label  ?? option.ctaLabel ?? option.name ?? 'Get started';
                             const variant   = isPopular ? 'contained' : 'outlined';
                             if (ctaAction === 'download') {
+                              const downloadHref = releasesAvailable ? '/download' : '/contact';
                               return (
-                                <Button component={Link} href="/download" variant={variant} fullWidth sx={{ fontWeight: 600 }}>
+                                <Button component={Link} href={downloadHref} variant={variant} fullWidth sx={{ fontWeight: 600 }}>
                                   {ctaLabel}
                                 </Button>
                               );
