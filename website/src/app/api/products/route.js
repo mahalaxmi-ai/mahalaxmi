@@ -18,6 +18,15 @@ const PAK_MAP = {
   },
 };
 
+const CATEGORY_SLUGS = {
+  'cat-terminal':         ['mahalaxmi-ai-terminal-orchestration'],
+  'terminal-orchestration': ['mahalaxmi-ai-terminal-orchestration'],
+  'cat-cloud':            ['mahalaxmi-headless-orchestration'],
+  'cloud-orchestration':  ['mahalaxmi-headless-orchestration'],
+  'cat-vscode':           ['mahalaxmi-vscode-extension'],
+  'vscode-extension':     ['mahalaxmi-vscode-extension'],
+};
+
 const PRODUCT_NAMES = {
   'mahalaxmi-ai-terminal-orchestration': 'Mahalaxmi AI Terminal Orchestration',
   'mahalaxmi-headless-orchestration': 'Mahalaxmi Headless Orchestration',
@@ -49,8 +58,12 @@ async function fetchPlatformProduct(slug, meta) {
   }
 }
 
-export async function GET() {
-  const slugs = Object.keys(PAK_MAP);
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const category = searchParams.get('category');
+  const slugs = category && CATEGORY_SLUGS[category]
+    ? CATEGORY_SLUGS[category]
+    : Object.keys(PAK_MAP);
   const products = await Promise.all(slugs.map((slug) => fetchPlatformProduct(slug, PAK_MAP[slug])));
   return NextResponse.json({ data: { products } });
 }
