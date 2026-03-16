@@ -23,7 +23,7 @@ import ServerCard from './ServerCard';
 const POLL_INTERVAL_MS = 5_000;
 const QUERY_KEY = 'mahalaxmi-servers';
 
-export default function ServersContent() {
+export default function ServersContent({ providerLabels = {}, tierLabels = {} }) {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -147,6 +147,8 @@ export default function ServersContent() {
                 onOptimisticUpdate={handleOptimisticUpdate}
                 onRefresh={refetch}
                 user={user}
+                providerLabels={providerLabels}
+                tierLabels={tierLabels}
               />
             </Grid>
           ))}

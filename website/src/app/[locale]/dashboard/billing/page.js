@@ -3,6 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { locales } from '@/i18n/routing';
 import { CircularProgress, Box } from '@mui/material';
 import BillingContent from './BillingContent';
+import { getTierLabels } from '@/lib/cloudConstants';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,9 +21,17 @@ export async function generateMetadata() {
 export default async function BillingPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
+
+  let tierLabels = {};
+  try {
+    tierLabels = await getTierLabels();
+  } catch {
+    // Platform unavailable — BillingContent falls back to raw tier slugs
+  }
+
   return (
     <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress /></Box>}>
-      <BillingContent />
+      <BillingContent tierLabels={tierLabels} />
     </Suspense>
   );
 }

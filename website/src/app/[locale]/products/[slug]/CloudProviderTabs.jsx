@@ -1,14 +1,13 @@
 'use client';
 import { useState } from 'react';
-import { PROVIDER_LABELS } from '@/lib/cloudConstants';
 
-const PROVIDERS = [
-  { key: 'hetzner', ...PROVIDER_LABELS.hetzner, available: true },
-  { key: 'aws',     ...PROVIDER_LABELS.aws,     available: false },
-  { key: 'gcp',     ...PROVIDER_LABELS.gcp,     available: false },
-];
+export default function CloudProviderTabs({ onProviderChange, providerLabels = {} }) {
+  const PROVIDERS = [
+    { key: 'hetzner', ...(providerLabels.hetzner ?? { name: 'Hetzner', color: '#d50000' }), available: true },
+    { key: 'aws',     ...(providerLabels.aws     ?? { name: 'AWS',     color: '#FF9900' }), available: false },
+    { key: 'gcp',     ...(providerLabels.gcp     ?? { name: 'GCP',     color: '#4285F4' }), available: false },
+  ];
 
-export default function CloudProviderTabs({ onProviderChange }) {
   const [active, setActive] = useState('hetzner');
 
   const handleSelect = (key) => {

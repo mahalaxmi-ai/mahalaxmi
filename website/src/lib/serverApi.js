@@ -1,43 +1,27 @@
-// Server-side API helpers — fetch from platform directly using PAK keys
-// Used in Server Components and generateMetadata
+// Server-side API helpers — fetch from platform directly using PAK keys.
+// Used in Server Components and generateMetadata.
+
+import { getProductMeta } from '@/lib/productApi';
 
 const PAK_MAP = {
   'mahalaxmi-ai-terminal-orchestration': process.env.MAHALAXMI_TERMINAL_PAK_KEY,
-  'mahalaxmi-headless-orchestration': process.env.MAHALAXMI_CLOUD_PAK_KEY,
-  'mahalaxmi-vscode-extension': process.env.MAHALAXMI_VSCODE_PAK_KEY,
+  'mahalaxmi-headless-orchestration':    process.env.MAHALAXMI_CLOUD_PAK_KEY,
+  'mahalaxmi-vscode-extension':          process.env.MAHALAXMI_VSCODE_PAK_KEY,
 };
 
-const META_MAP = {
-  'mahalaxmi-ai-terminal-orchestration': {
-    category_id: 'cat-terminal',
-    category_name: 'Terminal Orchestration',
-    image: '/mahalaxmi_logo.png',
-    is_featured: true,
-  },
-  'mahalaxmi-headless-orchestration': {
-    category_id: 'cat-cloud',
-    category_name: 'Cloud Orchestration',
-    image: '/mahalaxmi_logo.png',
-    is_featured: true,
-  },
-  'mahalaxmi-vscode-extension': {
-    category_id: 'cat-vscode',
-    category_name: 'VS Code Extension',
-    image: '/mahalaxmi_logo.png',
-    is_featured: false,
-  },
-};
-
-const PRODUCT_NAMES = {
-  'mahalaxmi-ai-terminal-orchestration': 'Mahalaxmi AI Terminal Orchestration',
-  'mahalaxmi-headless-orchestration': 'Mahalaxmi Headless Orchestration',
-  'mahalaxmi-vscode-extension': 'Mahalaxmi VS Code Extension',
-};
+export async function getProductMetadata(slug) {
+  const meta = await getProductMeta();
+  return {
+    name:        meta.name,
+    description: meta.description,
+    logo_url:    meta.logo_url,
+    slug:        meta.slug,
+  };
+}
 
 export async function fetchProductBySlug(slug) {
   const pak = PAK_MAP[slug];
-  const meta = META_MAP[slug];
-  if (!pak || !meta) return null;
+  if (!pak) return null;
 
   const platformUrl = process.env.MAHALAXMI_PLATFORM_API_URL;
   try {
@@ -51,7 +35,7 @@ export async function fetchProductBySlug(slug) {
     const pricing_options = (product.pricingTiers || []).map((tier) => ({
       ...tier,
       price: tier.pricing?.primaryPrice ?? tier.pricing?.monthly ?? 0,
-      price_period: 'month',
+      price_period: tier.billing_cycle ?? tier.price_period ?? 'month',
       features: tier.features || [],
       is_popular: !!tier.isPopular,
       trial_enabled: false,
@@ -59,14 +43,22 @@ export async function fetchProductBySlug(slug) {
         ? `${tier.pricing.yearly.toFixed(2)}/yr`
         : null,
     }));
-    return { ...product, pricing_options, slug, ...meta, is_platform_connected: true, data_source: 'platform' };
+    return {
+      ...product,
+      pricing_options,
+      slug,
+      image:      product.logo_url ?? '/mahalaxmi_logo.png',
+      is_featured: product.is_featured ?? true,
+      is_platform_connected: true,
+      data_source: 'platform',
+    };
   } catch {
     return {
       slug,
-      ...meta,
       pricing_options: [],
       pricing_type: 'unavailable',
-      name: PRODUCT_NAMES[slug] || slug,
+      name: product?.name ?? slug,
+      image: '/mahalaxmi_logo.png',
       short_description: 'AI orchestration platform by ThriveTech Services LLC.',
       is_platform_connected: false,
       data_source: 'placeholder',

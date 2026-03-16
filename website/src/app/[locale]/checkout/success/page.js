@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { setRequestLocale } from 'next-intl/server';
 import { locales } from '@/i18n/routing';
 import MahalaxmiCheckoutSuccessContent from './MahalaxmiCheckoutSuccessContent';
+import { getProviderLabels, getTierLabels } from '@/lib/cloudConstants';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,17 @@ export default async function MahalaxmiCheckoutSuccessPage({ params }) {
   const { locale } = await params;
   setRequestLocale(locale);
 
+  let providerLabels = {};
+  let tierLabels = {};
+  try {
+    [providerLabels, tierLabels] = await Promise.all([
+      getProviderLabels(),
+      getTierLabels(),
+    ]);
+  } catch {
+    // Platform unavailable — success page falls back to raw slugs
+  }
+
   return (
     <Suspense
       fallback={
@@ -29,7 +41,7 @@ export default async function MahalaxmiCheckoutSuccessPage({ params }) {
         </div>
       }
     >
-      <MahalaxmiCheckoutSuccessContent />
+      <MahalaxmiCheckoutSuccessContent providerLabels={providerLabels} tierLabels={tierLabels} />
     </Suspense>
   );
 }

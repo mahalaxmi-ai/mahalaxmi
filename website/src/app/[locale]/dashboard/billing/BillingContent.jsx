@@ -15,9 +15,7 @@ import {
 import { CreditCard, OpenInNew } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from '@/i18n/navigation';
-import { TIER_LABELS } from '@/lib/cloudConstants';
-
-export default function BillingContent() {
+export default function BillingContent({ tierLabels = {} }) {
   const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const [portalLoading, setPortalLoading] = useState(false);
@@ -61,7 +59,7 @@ export default function BillingContent() {
   const tierKey = user?.tier
     ?? servers.find((s) => s.status === 'active' || s.status === 'provisioning')?.tier
     ?? null;
-  const tierLabel = tierKey ? (TIER_LABELS[tierKey] ?? tierKey) : null;
+  const tierLabel = tierKey ? (tierLabels[tierKey] ?? tierKey) : null;
 
   async function handleManageBilling() {
     setPortalLoading(true);

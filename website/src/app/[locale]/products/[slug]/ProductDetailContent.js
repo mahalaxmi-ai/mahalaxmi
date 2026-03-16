@@ -56,7 +56,7 @@ import CloudProviderTabs from './CloudProviderTabs';
 import ComingSoonTab from './ComingSoonTab';
 import BuyNowButton from '../../cloud/pricing/BuyNowButton';
 
-const ProductDetailContent = ({ product, slug }) => {
+const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
   const router = useRouter();
   const theme = useTheme();
 
@@ -470,7 +470,7 @@ const ProductDetailContent = ({ product, slug }) => {
         <Box id="pricing" sx={{ py: { xs: 8, md: 12 }, bgcolor: 'rgba(255,255,255,0.05)' }}>
           <Container maxWidth="lg">
 
-            <CloudProviderTabs onProviderChange={setCloudProvider} />
+            <CloudProviderTabs onProviderChange={setCloudProvider} providerLabels={providerLabels} />
 
             {cloudProvider === 'hetzner' ? (
               <>

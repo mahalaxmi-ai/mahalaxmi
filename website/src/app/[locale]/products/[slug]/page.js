@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { setRequestLocale } from 'next-intl/server';
 import { getAlternateLanguages, getCanonical, getOpenGraphLocale } from '@/utils/i18nMetadata';
 import { fetchProductBySlug } from '@/lib/serverApi';
+import { getProviderLabels } from '@/lib/cloudConstants';
 import JsonLd from '@/components/SEO/JsonLd';
 import { productSchema, softwareApplicationSchema, faqPageSchema, breadcrumbSchema } from '@/utils/seoSchemas';
 import { SITE_URL } from '@/utils/seoConstants';
@@ -38,7 +39,10 @@ export default async function ProductDetailPage({ params }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
 
-  const product = await fetchProductBySlug(slug);
+  const [product, providerLabels] = await Promise.all([
+    fetchProductBySlug(slug),
+    getProviderLabels().catch(() => ({})),
+  ]);
 
   if (!product) {
     notFound();
@@ -55,7 +59,7 @@ export default async function ProductDetailPage({ params }) {
         { name: product.category_name || 'Category', url: '/products' },
         { name: product.name },
       ])} />
-      <ProductDetailContent product={product} slug={slug} />
+      <ProductDetailContent product={product} slug={slug} providerLabels={providerLabels} />
     </>
   );
 }

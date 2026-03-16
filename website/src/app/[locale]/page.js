@@ -8,6 +8,7 @@ import {
   Groups, ArrowForward, Cloud,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { getPricingTiers } from '@/lib/productApi';
 
 
 const features = [
@@ -43,35 +44,7 @@ const features = [
   },
 ];
 
-const tiers = [
-  {
-    name: 'Trial',
-    price: 'Free',
-    sub: 'forever',
-    highlight: false,
-    cta: 'Download Free',
-    ctaHref: '/products/mahalaxmi-ai-terminal-orchestration',
-    features: ['2 AI providers', '4 concurrent workers', 'Basic codebase indexing', 'Session shared memory', 'Windows, macOS, Linux'],
-  },
-  {
-    name: 'Professional',
-    price: '$49',
-    sub: '/ developer / month',
-    highlight: true,
-    cta: 'Start 30-Day Trial',
-    ctaHref: '/products/mahalaxmi-ai-terminal-orchestration',
-    features: ['All 8+ AI providers', 'Unlimited concurrent workers', 'Full GraphRAG knowledge graph', 'Project + Global memory', 'Post-cycle validation dashboard', 'PR review response loop', 'IDE extensions (VS Code, JetBrains, Neovim)', 'Email support'],
-  },
-  {
-    name: 'Enterprise',
-    price: 'Contact us',
-    sub: '',
-    highlight: false,
-    cta: 'Contact Sales',
-    ctaHref: '/contact',
-    features: ['Everything in Professional', 'HIPAA & FedRAMP compliance profiles', 'Headless service mode (REST + SSE API)', 'Intake adapters (Jira, Slack, GitHub Issues)', 'Per-developer cost reporting', 'Dedicated Slack support + SLA'],
-  },
-];
+// tiers loaded from API in the async component below
 
 const testimonials = [
   {
@@ -90,6 +63,24 @@ const testimonials = [
 
 export default async function MahalaxmiLandingPage({ params }) {
   const { locale } = await params;
+
+  let tiers = [];
+  let cloudFromPrice = 'Cloud pricing — see pricing page';
+  try {
+    const allTiers = await getPricingTiers();
+    tiers = allTiers.filter((t) =>
+      ['free', 'trial', 'pro-desktop', 'professional', 'enterprise'].includes(t.slug)
+    );
+    if (!tiers.length) tiers = allTiers.slice(0, 3); // fallback: first 3 if slugs differ
+    const cloudSolo = allTiers.find((t) => t.slug === 'cloud-solo');
+    if (cloudSolo?.price_monthly != null) {
+      cloudFromPrice = `Cloud pricing — from $${cloudSolo.price_monthly}/mo`;
+    } else if (cloudSolo?.price_display) {
+      cloudFromPrice = `Cloud pricing — from ${cloudSolo.price_display}`;
+    }
+  } catch {
+    // Platform unavailable — page renders without tier section
+  }
 
   return (
     <Box>
@@ -269,48 +260,61 @@ export default async function MahalaxmiLandingPage({ params }) {
           <Typography variant="body1" color="text.secondary" sx={{ mb: 6, textAlign: 'center' }}>
             You pay ThriveTech for the orchestration software — not for AI tokens, not for compute, not for a cloud proxy.
           </Typography>
-          <Grid container spacing={3} justifyContent="center">
-            {tiers.map(({ name, price, sub, highlight, cta, ctaHref, features: tierFeatures }) => (
-              <Grid item xs={12} sm={6} md={4} key={name}>
-                <Card
-                  elevation={highlight ? 6 : 1}
-                  sx={{
-                    height: '100%',
-                    border: highlight ? '2px solid' : '1px solid',
-                    borderColor: highlight ? 'primary.main' : 'divider',
-                    position: 'relative',
-                  }}
-                >
-                  {highlight && (
-                    <Chip label="Most Popular" color="primary" size="small" sx={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }} />
-                  )}
-                  <CardContent sx={{ p: 3 }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>{name}</Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 800, color: highlight ? 'primary.main' : 'text.primary' }}>
-                      {price}
-                    </Typography>
-                    {sub && <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{sub}</Typography>}
-                    <Button
-                      component={Link}
-                      href={ctaHref}
-                      variant={highlight ? 'contained' : 'outlined'}
-                      fullWidth
-                      sx={{ mb: 3 }}
+          {tiers.length > 0 && (
+            <Grid container spacing={3} justifyContent="center">
+              {tiers.map((tier) => {
+                const name = tier.name;
+                const price = tier.price_display ?? (tier.price_monthly != null ? `$${tier.price_monthly}` : 'Contact us');
+                const sub = tier.price_subtitle ?? '';
+                const highlight = !!(tier.highlight || tier.isRecommended);
+                const cta = tier.cta_label ?? tier.cta ?? 'Get started';
+                const ctaHref = tier.cta_action === 'download' ? '/download'
+                  : tier.cta_action === 'contact' ? '/contact'
+                  : (tier.cta_href ?? tier.ctaHref ?? '/products/mahalaxmi-ai-terminal-orchestration');
+                const tierFeatures = tier.features ?? [];
+                return (
+                  <Grid item xs={12} sm={6} md={4} key={tier.slug ?? name}>
+                    <Card
+                      elevation={highlight ? 6 : 1}
+                      sx={{
+                        height: '100%',
+                        border: highlight ? '2px solid' : '1px solid',
+                        borderColor: highlight ? 'primary.main' : 'divider',
+                        position: 'relative',
+                      }}
                     >
-                      {cta}
-                    </Button>
-                    <Box component="ul" sx={{ pl: 2, m: 0 }}>
-                      {tierFeatures.map((f) => (
-                        <Box component="li" key={f} sx={{ mb: 0.75 }}>
-                          <Typography variant="body2">{f}</Typography>
+                      {highlight && (
+                        <Chip label="Most Popular" color="primary" size="small" sx={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }} />
+                      )}
+                      <CardContent sx={{ p: 3 }}>
+                        <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>{name}</Typography>
+                        <Typography variant="h4" sx={{ fontWeight: 800, color: highlight ? 'primary.main' : 'text.primary' }}>
+                          {price}
+                        </Typography>
+                        {sub && <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{sub}</Typography>}
+                        <Button
+                          component={Link}
+                          href={ctaHref}
+                          variant={highlight ? 'contained' : 'outlined'}
+                          fullWidth
+                          sx={{ mb: 3 }}
+                        >
+                          {cta}
+                        </Button>
+                        <Box component="ul" sx={{ pl: 2, m: 0 }}>
+                          {tierFeatures.map((f) => (
+                            <Box component="li" key={f} sx={{ mb: 0.75 }}>
+                              <Typography variant="body2">{f}</Typography>
+                            </Box>
+                          ))}
                         </Box>
-                      ))}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                );
+              })}
+            </Grid>
+          )}
           <Box sx={{ textAlign: 'center', mt: 4 }}>
             <Button component={Link} href="/pricing" endIcon={<ArrowForward />} variant="text">
               See full comparison table
@@ -358,7 +362,7 @@ export default async function MahalaxmiLandingPage({ params }) {
                 size="large"
                 endIcon={<ArrowForward />}
               >
-                Cloud pricing — from $0.06/hr
+                {cloudFromPrice}
               </Button>
             </Box>
           </Paper>

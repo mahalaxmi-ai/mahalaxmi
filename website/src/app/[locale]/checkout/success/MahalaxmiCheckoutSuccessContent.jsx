@@ -14,17 +14,14 @@ import {
 } from '@mui/material';
 import { CheckCircleOutline, ErrorOutline, OpenInNew } from '@mui/icons-material';
 import { useAuth } from '@/contexts/AuthContext';
-import { PROVIDER_LABELS, TIER_LABELS } from '@/lib/cloudConstants';
-
 const POLL_INTERVAL_MS = 3_000;
 const POLL_TIMEOUT_MS  = 10 * 60 * 1_000; // 10 minutes
 const REDIRECT_DELAY_S = 5;
 const DASHBOARD_URL    = '/dashboard/servers';
 
-// ProviderBadge — reads from the shared contract-locked PROVIDER_LABELS map
-function ProviderBadge({ provider }) {
+function ProviderBadge({ provider, providerLabels }) {
   if (!provider) return null;
-  const cfg = PROVIDER_LABELS[provider] ?? { name: provider, color: 'grey' };
+  const cfg = providerLabels?.[provider] ?? { name: provider, color: 'grey' };
   return (
     <Chip
       label={cfg.name}
@@ -34,7 +31,7 @@ function ProviderBadge({ provider }) {
   );
 }
 
-export default function MahalaxmiCheckoutSuccessContent() {
+export default function MahalaxmiCheckoutSuccessContent({ providerLabels = {}, tierLabels = {} }) {
   const searchParams = useSearchParams();
   const router       = useRouter();
   // Strip anything after a stray '?' — Stripe can produce doubled session_id params
@@ -175,9 +172,9 @@ export default function MahalaxmiCheckoutSuccessContent() {
     };
   }, [authLoading, isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const tierLabel     = sessionData?.tier     ? (TIER_LABELS[sessionData.tier]     ?? sessionData.tier)     : null;
+  const tierLabel     = sessionData?.tier     ? (tierLabels[sessionData.tier]         ?? sessionData.tier)          : null;
   const providerLabel = sessionData?.cloud_provider
-    ? (PROVIDER_LABELS[sessionData.cloud_provider]?.name ?? sessionData.cloud_provider)
+    ? (providerLabels[sessionData.cloud_provider]?.name ?? sessionData.cloud_provider)
     : null;
 
   return (
@@ -224,7 +221,7 @@ export default function MahalaxmiCheckoutSuccessContent() {
             {/* Provider badge */}
             {sessionData.cloud_provider && (
               <Box sx={{ mb: 2 }}>
-                <ProviderBadge provider={sessionData.cloud_provider} />
+                <ProviderBadge provider={sessionData.cloud_provider} providerLabels={providerLabels} />
               </Box>
             )}
 

@@ -22,7 +22,6 @@ import {
   Typography,
 } from '@mui/material';
 import { Code, Delete, Pause, PlayArrow, Settings } from '@mui/icons-material';
-import { PROVIDER_LABELS } from '@/lib/cloudConstants';
 import ProjectNameModal from './ProjectNameModal';
 
 // ── Status config — all 9 states ──────────────────────────────────────────────
@@ -49,9 +48,9 @@ function StatusBadge({ status }) {
   );
 }
 
-function ProviderBadge({ provider }) {
+function ProviderBadge({ provider, providerLabels }) {
   if (!provider) return null;
-  const cfg = PROVIDER_LABELS[provider] ?? { name: provider, color: '#6B7280' };
+  const cfg = providerLabels?.[provider] ?? { name: provider, color: '#6B7280' };
   return (
     <Chip
       label={cfg.name}
@@ -91,7 +90,7 @@ function generateTimeoutOptions(min, max) {
     }));
 }
 
-export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user }) {
+export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user, providerLabels = {}, tierLabels = {} }) {
   const [configureOpen, setConfigureOpen] = useState(false);
   const [stopConfirmOpen, setStopConfirmOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -257,7 +256,7 @@ export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user
 
           {/* Provider badge + Keep Warm */}
           <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
-            <ProviderBadge provider={server.cloud_provider} />
+            <ProviderBadge provider={server.cloud_provider} providerLabels={providerLabels} />
             {has_keep_warm && (
               <Chip
                 label="Keep Warm"
@@ -269,7 +268,7 @@ export default function ServerCard({ server, onOptimisticUpdate, onRefresh, user
 
           {/* Tier + date */}
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-            {server.tier}
+            {tierLabels?.[server.tier] ?? server.tier}
             {server.tier && server.created_at && ' · '}
             {server.created_at && `Created ${new Date(server.created_at).toLocaleDateString()}`}
           </Typography>
