@@ -43,7 +43,7 @@ async function fetchLatestRelease(platform) {
     const data = await res.json();
     if (!data.success || !data.release) return null;
     return {
-      url: `${PLATFORM_API_URL}${data.release.downloadUrl}`,
+      url: `/api/releases/download?id=${data.release.id}`,
       filename: data.release.fileName,
       version: data.release.version,
       format: data.release.installerFormat,
