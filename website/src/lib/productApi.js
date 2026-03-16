@@ -1,9 +1,10 @@
 // Central product data fetcher — all product details come from Platform API via PAK key.
 // Used by server components only (async). Never imported by client components.
 
-const PLATFORM_API_URL = process.env.MAHALAXMI_PLATFORM_API_URL;
-const CLOUD_PAK_KEY   = process.env.MAHALAXMI_CLOUD_PAK_KEY;
-const DESKTOP_PAK_KEY = process.env.MAHALAXMI_DESKTOP_PAK_KEY;
+const PLATFORM_API_URL  = process.env.MAHALAXMI_PLATFORM_API_URL;
+const CLOUD_PAK_KEY     = process.env.MAHALAXMI_CLOUD_PAK_KEY;
+const DESKTOP_PAK_KEY   = process.env.MAHALAXMI_DESKTOP_PAK_KEY;
+const TERMINAL_PAK_KEY  = process.env.MAHALAXMI_TERMINAL_PAK_KEY;
 
 async function fetchOffering(pakKey) {
   const res = await fetch(
@@ -31,9 +32,49 @@ export async function getPricingTiers() {
   return offering.pricing_tiers ?? [];
 }
 
+async function fetchLatestRelease(platform) {
+  try {
+    const url = `${PLATFORM_API_URL}/api/v1/public/releases/latest?platform=${platform}`;
+    const res = await fetch(url, {
+      headers: { 'X-Channel-API-Key': TERMINAL_PAK_KEY },
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.success || !data.release) return null;
+    return {
+      url: `${PLATFORM_API_URL}${data.release.downloadUrl}`,
+      filename: data.release.fileName,
+      version: data.release.version,
+      format: data.release.installerFormat,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getDownloads() {
-  const offering = await getDesktopProductOffering();
-  return offering.downloads ?? {};
+  let downloads = {};
+  try {
+    const offering = await getDesktopProductOffering();
+    downloads = offering.downloads ?? {};
+  } catch {}
+
+  // If the offering has no desktop download URLs, fetch directly from releases API
+  const desktopApp = downloads.desktop_app ?? {};
+  if (Object.keys(desktopApp).length === 0) {
+    const [linux, windows, macos] = await Promise.all([
+      fetchLatestRelease('linux'),
+      fetchLatestRelease('windows'),
+      fetchLatestRelease('macos'),
+    ]);
+    if (linux)   desktopApp.linux_deb        = linux;
+    if (windows) desktopApp.windows_exe      = windows;
+    if (macos)   desktopApp.macos_dmg        = macos;
+    downloads.desktop_app = desktopApp;
+  }
+
+  return downloads;
 }
 
 // Cloud-scoped helpers
