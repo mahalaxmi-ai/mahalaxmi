@@ -36,7 +36,7 @@ async function fetchLatestRelease(platform) {
   try {
     const url = `${PLATFORM_API_URL}/api/v1/public/releases/latest?platform=${platform}`;
     const res = await fetch(url, {
-      headers: { 'X-Channel-API-Key': TERMINAL_PAK_KEY },
+      headers: { 'X-Channel-API-Key': DESKTOP_PAK_KEY },
       cache: 'no-store',
     });
     if (!res.ok) return null;
