@@ -701,7 +701,7 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
                 textAlign: 'center',
                 p: { xs: 4, md: 6 },
                 borderRadius: 4,
-                bgcolor: 'white',
+                bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'warning.light',
                 boxShadow: `0 4px 20px rgba(237, 108, 2, 0.1)`,
@@ -776,7 +776,7 @@ const ProductDetailContent = ({ product, slug, providerLabels = {} }) => {
                 textAlign: 'center',
                 p: { xs: 4, md: 6 },
                 borderRadius: 4,
-                bgcolor: 'white',
+                bgcolor: 'background.paper',
                 border: '1px solid',
                 borderColor: 'divider',
               }}
