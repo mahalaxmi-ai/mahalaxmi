@@ -28,5 +28,14 @@ Your Contributions are provided "as is", without warranty of any kind.
 
 ---
 
-To accept this CLA, include the following in your pull request:
-> I have read and agree to the Contributor License Agreement.
+## How to Accept
+
+When you open your first pull request, a bot will comment asking you to accept the CLA.
+Reply with:
+
+```
+I have read and agree to the CLA.
+```
+
+That's it — no email, no DocuSign, no separate form. Your acceptance is recorded by GitHub username
+and linked to the PR. For corporate CLAs, contact legal@mahalaxmi.ai.

@@ -17,7 +17,7 @@ Brief description of what this PR does.
 - [ ] `cargo clippy --workspace -- -D warnings` is clean
 - [ ] `cargo fmt --all` applied
 - [ ] No references to private crates or internal infrastructure
-- [ ] CLA signed (CLA Assistant will check automatically)
+- [ ] CLA accepted (bot will prompt you to reply `I have read and agree to the CLA.` if needed)
 
 ## Related Issue
 

@@ -5,13 +5,21 @@ Please read this document before submitting your first pull request.
 
 ## Contributor License Agreement
 
-Before your first pull request can be merged, you must sign our
-[Contributor License Agreement](CLA.md). CLA Assistant will
-automatically prompt you when you open your first PR. Your signature
-is recorded electronically via GitHub OAuth.
+Before your first pull request can be merged, you must accept our
+[Contributor License Agreement](CLA.md).
 
-If you are contributing on behalf of an organization, contact
-legal@mahalaxmi.ai to execute a Corporate CLA first.
+When you open your first PR, a bot will post a comment explaining this
+and asking you to reply with:
+
+```
+I have read and agree to the CLA.
+```
+
+That's it — no email, no DocuSign. Your acceptance is recorded by GitHub
+username in this repository's `.github/cla-signatures.json`.
+
+For corporate CLAs (contributing on behalf of a company), contact
+legal@mahalaxmi.ai before submitting.
 
 ## Contribution Scope
 
