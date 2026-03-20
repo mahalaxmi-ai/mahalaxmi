@@ -159,7 +159,7 @@ error-license-serialization-failed = 序列化许可证数据失败：{ $reason 
 error-license-signing-failed = 签署许可证失败：{ $reason }
 error-license-feature-denied = 功能"{ $feature }"在{ $tier }方案中不可用
 error-license-worker-limit = 请求的{ $requested }个工作器超出了{ $tier }方案的上限{ $limit }
-error-license-manager-limit = 请求的{ $requested }个管理器超出了{ $tier }方案的上限{ $limit }
+error-license-manager-limit = 请求的{ $requested }个管理器超出了{ $tier }方案的上限{ $limit }。请在设置 → 许可证中激活订阅以解锁更多权限。
 error-license-category-denied = 类别"{ $category }"需要{ $required_tier }方案（当前：{ $tier }）
 error-license-fingerprint-hostname = 无法确定主机名：{ $reason }
 error-license-fingerprint-username = 无法确定用户名：{ $reason }
@@ -398,3 +398,9 @@ worktree-gitignore-write-failed = Failed to write .gitignore: { $detail }
 worktree-gitignore-create-failed = Failed to create .gitignore: { $detail }
 worktree-git-exec-failed = Failed to spawn git command ({ $cmd }): { $detail }
 worktree-git-cmd-failed = git command failed ({ $cmd }): { $detail }
+
+# Autonomous Sprint Completion (WAVE 3)
+error-orchestration-quorum-not-met = 管理器法定人数不足：收到 { $received }/{ $expected } 个提案（最少: { $min_quorum }）
+orchestration-file-conflict-serialized = 任务 { $later_task } 在 { $earlier_task } 之后序列化 — 两者都声明文件 '{ $file }'
+orchestration-build-check-failed = 工作者 { $worker_id } 的每工作者 { $project_type } 构建检查失败
+orchestration-build-check-passed = 工作者 { $worker_id } 的每工作者 { $project_type } 构建检查通过

@@ -1,39 +1,130 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
-//! Configuration gate for the adversarial deliberation protocol.
+//! Provider detection gate for the adversarial deliberation protocol.
+//!
+//! [`DeliberationGate::should_use_deliberation`] returns `true` only when all
+//! of the following are satisfied:
+//!
+//! 1. `config.enabled == true`
+//! 2. The provider name contains `"claude"` (case-insensitive)
+//! 3. `ANTHROPIC_API_KEY` environment variable is set and non-empty
+//! 4. `config.deliberation_turns >= 2`
+//!
+//! Any other combination causes graceful degradation to the standard PTY
+//! manager path — no API calls are ever made.
 
-/// Configuration governing the adversarial multi-agent manager deliberation.
+use mahalaxmi_core::config::AdversarialDeliberationConfig;
+
+/// Provider detection gate for the adversarial deliberation protocol.
 ///
-/// Controls which models play each deliberation role and whether the
-/// adversarial protocol is enabled for a given orchestration cycle.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct AdversarialDeliberationConfig {
-    /// Model identifier for the Proposer and Challenger roles.
-    ///
-    /// Defaults to `"claude-haiku-4-5-20251001"` — a fast, cost-effective
-    /// model suited to generating and critiquing task lists.
-    #[serde(default = "default_proposer_model")]
-    pub proposer_model: String,
+/// All checks are pure (no I/O) except for reading `ANTHROPIC_API_KEY` from
+/// the process environment.
+pub struct DeliberationGate;
 
-    /// Model identifier for the Synthesizer role.
+impl DeliberationGate {
+    /// Return `true` when all four conditions are satisfied for deliberation.
     ///
-    /// Defaults to `"claude-sonnet-4-6"` — a higher-capability model used
-    /// to produce the authoritative final task list.
-    #[serde(default = "default_synthesizer_model")]
-    pub synthesizer_model: String,
+    /// | Condition | Check |
+    /// |-----------|-------|
+    /// | `config.enabled` | must be `true` |
+    /// | Provider is Claude | `provider_name` contains `"claude"` (case-insensitive) |
+    /// | API key present | `ANTHROPIC_API_KEY` env var is non-empty |
+    /// | Enough turns | `config.deliberation_turns >= 2` |
+    ///
+    /// `provider_name` is obtained by calling `provider.name()` at the call
+    /// site, keeping the gate decoupled from the `AiProvider` trait object.
+    /// This makes the gate extensible — callers add providers by passing
+    /// different names without changing this signature.
+    pub fn should_use_deliberation(
+        provider_name: &str,
+        config: &AdversarialDeliberationConfig,
+    ) -> bool {
+        if !config.enabled {
+            return false;
+        }
 
-    /// Whether the adversarial deliberation protocol is active.
-    ///
-    /// When `false`, the orchestration engine falls back to standard
-    /// single-manager proposal generation.
-    #[serde(default)]
-    pub enabled: bool,
+        // Allowlist check — case-insensitive so "Claude Code", "claude", etc. all match.
+        if !provider_name.to_lowercase().contains("claude") {
+            return false;
+        }
+
+        // API key must be present and non-empty.
+        let key = std::env::var("ANTHROPIC_API_KEY").unwrap_or_default();
+        if key.trim().is_empty() {
+            return false;
+        }
+
+        // Need at minimum Proposer + Synthesizer (turns >= 2).
+        if config.deliberation_turns < 2 {
+            return false;
+        }
+
+        true
+    }
 }
 
-fn default_proposer_model() -> String {
-    "claude-haiku-4-5-20251001".to_owned()
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn default_synthesizer_model() -> String {
-    "claude-sonnet-4-6".to_owned()
+    fn enabled_config() -> AdversarialDeliberationConfig {
+        AdversarialDeliberationConfig {
+            enabled: true,
+            deliberation_turns: 3,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_gate_false_when_disabled() {
+        let config = AdversarialDeliberationConfig {
+            enabled: false,
+            deliberation_turns: 3,
+            ..Default::default()
+        };
+        assert!(!DeliberationGate::should_use_deliberation("Claude Code", &config));
+    }
+
+    #[test]
+    fn test_gate_false_when_not_claude() {
+        std::env::set_var("ANTHROPIC_API_KEY", "sk-test-key");
+        let result = DeliberationGate::should_use_deliberation("Gemini", &enabled_config());
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        assert!(!result, "Non-Claude provider should not trigger deliberation");
+    }
+
+    #[test]
+    fn test_gate_false_when_no_api_key() {
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        let result = DeliberationGate::should_use_deliberation("Claude Code", &enabled_config());
+        assert!(!result, "Missing API key must prevent deliberation");
+    }
+
+    #[test]
+    fn test_gate_true_when_all_conditions_met() {
+        std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-test-key-12345");
+        let result = DeliberationGate::should_use_deliberation("Claude Code", &enabled_config());
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        assert!(result, "All conditions met — gate should open");
+    }
+
+    #[test]
+    fn test_gate_false_when_turns_less_than_2() {
+        std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-test-key");
+        let config = AdversarialDeliberationConfig {
+            enabled: true,
+            deliberation_turns: 1,
+            ..Default::default()
+        };
+        let result = DeliberationGate::should_use_deliberation("Claude Code", &config);
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        assert!(!result, "turns < 2 must disable deliberation");
+    }
+
+    #[test]
+    fn test_gate_case_insensitive_claude_match() {
+        std::env::set_var("ANTHROPIC_API_KEY", "sk-ant-test");
+        // "claude" lowercase should also match
+        let result = DeliberationGate::should_use_deliberation("claude", &enabled_config());
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        assert!(result, "lowercase 'claude' should match");
+    }
 }

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Language support for codebase indexing.
 //!
 //! Provides grammar configuration, a language registry, and the

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use crate::consensus::similarity::{
     multi_field_similarity, normalized_tokens, token_jaccard, SimilarityWeights,
 };

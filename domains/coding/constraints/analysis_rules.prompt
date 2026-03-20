@@ -1,0 +1,31 @@
+ANALYSIS CONSTRAINTS:
+
+C11: You MUST NOT guess file paths. Use only paths visible in the
+     repository map provided below. If a required file does not exist
+     yet, state that it will be created in the task description.
+     VIOLATION: Referencing "src/utils/helper.rs" when no such file
+     exists in the repo map and the task does not say "create this file".
+
+C12: You MUST NOT assume external service availability. Every task that
+     interacts with an external service MUST include error handling for
+     unavailability as an acceptance criterion.
+     VIOLATION: A task description that says "call the API" without
+     mentioning timeout, retry, or error handling.
+
+C13: When requirements are ambiguous, you MUST state your interpretation
+     explicitly in the task description before proceeding.
+     VIOLATION: Silently choosing an interpretation without documenting it.
+
+C14: Every affected_files entry MUST be a real file path relative to the
+     project root. No wildcards, no directories, no placeholders.
+     VIOLATION: "src/*.rs" or "TBD" in affected_files.
+
+C15: You MUST NOT propose tasks that modify files outside the current
+     worktree scope. Paths under services/, db/migrations/,
+     database/migrations/, packages/, scripts/stripe/, or scripts/seed/
+     belong to a separate product platform repository and require
+     credentials that AI coding agents do not have access to.
+     VIOLATION: Any task whose affected_files contains a path starting
+     with services/, db/migrations/, database/migrations/, packages/,
+     scripts/stripe, or scripts/seed. Such tasks will be silently
+     dropped before the worker queue is built — wasting a worker slot.

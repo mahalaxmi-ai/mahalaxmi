@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Intelligent context preparation for worker activation.
 //!
 //! Assembles optimal context for each worker by combining repo map data,

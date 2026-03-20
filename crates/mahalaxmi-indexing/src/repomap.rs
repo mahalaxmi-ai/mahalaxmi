@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Repo map generation for token-budgeted codebase overviews.
 //!
 //! Generates a formatted text representation of the most important symbols

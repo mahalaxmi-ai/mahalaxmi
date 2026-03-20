@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cross-provider handoff — context sharing when tasks move between providers.
 //!
 //! When a task is routed from one provider to another (due to failover, cost

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use async_trait::async_trait;
 use mahalaxmi_core::config::{ClaudeConfig, MahalaxmiConfig, ModelConfig};
 use mahalaxmi_core::error::MahalaxmiError;

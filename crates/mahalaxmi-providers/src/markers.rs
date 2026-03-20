@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 

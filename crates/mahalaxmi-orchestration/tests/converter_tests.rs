@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 02 converters:
 //! - `ExecutionPlan::from_consensus_result()` — ConsensusResult → ExecutionPlan
 //! - `ManagerProposal::from_json()` — JSON → ManagerProposal

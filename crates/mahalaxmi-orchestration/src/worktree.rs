@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Git worktree manager — per-worker file isolation.
 //!
 //! Each worker gets its own git worktree so concurrent workers never conflict
@@ -86,6 +84,13 @@ pub struct WorktreeManager {
     /// Stash label created by `apply_dirty_policy()` when policy is `Stash`.
     /// `restore_pre_cycle_stash()` pops this stash at cycle end.
     pre_cycle_stash: Option<String>,
+    /// The job-configured merge target branch (e.g. `feature/platform-revenue-unblock`).
+    ///
+    /// When set, worker branches are named `{target_branch}/worker-{n}-{slug}` so
+    /// they are visually grouped under the parent branch in GitHub/GitLab UIs and
+    /// the PR merge target is unambiguous.  When `None` the legacy
+    /// `mahalaxmi/worker-{n}-{slug}` format is used.
+    target_branch: Option<String>,
 }
 
 impl WorktreeManager {
@@ -141,11 +146,72 @@ impl WorktreeManager {
             git_log: true,
             dirty_policy,
             pre_cycle_stash: None,
+            target_branch: None,
         };
+
+        // Ensure .mahalaxmi/ is in .gitignore BEFORE the dirty check.
+        // If the file was just written, auto-commit it so the dirty-policy
+        // check doesn't immediately abort the cycle with "M .gitignore".
+        mgr.ensure_gitignore()?;
+        mgr.auto_commit_gitignore_if_dirty()?;
 
         mgr.apply_dirty_policy()?;
 
+        // Phase 28: register git hooks for Living Skill Registry.
+        // Hook failure is non-fatal — the hook itself always exits 0.
+        #[cfg(feature = "living-skills")]
+        {
+            use mahalaxmi_skills::hooks::git_hook::{
+                GitHookKind, GitHookManager, skill_hook_script,
+            };
+            let hooks = GitHookManager::new(&mgr.project_root);
+            let script = skill_hook_script();
+            if let Err(e) = hooks.register(GitHookKind::PostMerge, script) {
+                tracing::warn!(
+                    error = %e,
+                    "Failed to register post-merge skill hook (non-fatal)"
+                );
+            }
+            if let Err(e) = hooks.register(GitHookKind::PostCheckout, script) {
+                tracing::warn!(
+                    error = %e,
+                    "Failed to register post-checkout skill hook (non-fatal)"
+                );
+            }
+            tracing::info!(
+                repo = %mgr.project_root.display(),
+                "Living Skill Registry git hooks registered"
+            );
+        }
+
         Ok(mgr)
+    }
+
+    /// Auto-commit `.gitignore` if `ensure_gitignore()` just modified it.
+    ///
+    /// Only touches `.gitignore`; no other staged or unstaged files are
+    /// included. A no-op when `.gitignore` is already clean.
+    fn auto_commit_gitignore_if_dirty(&self) -> MahalaxmiResult<()> {
+        let status = run_git(
+            &self.project_root,
+            &["status", "--porcelain", ".gitignore"],
+            &self.i18n,
+        )?;
+        if status.trim().is_empty() {
+            return Ok(());
+        }
+        tracing::info!("git: auto-committing .gitignore update (added .mahalaxmi/ entry)");
+        run_git(&self.project_root, &["add", ".gitignore"], &self.i18n)?;
+        run_git(
+            &self.project_root,
+            &[
+                "commit",
+                "-m",
+                "chore: add .mahalaxmi/ to .gitignore [mahalaxmi auto]",
+            ],
+            &self.i18n,
+        )?;
+        Ok(())
     }
 
     /// Check for uncommitted changes in the working tree.
@@ -261,6 +327,17 @@ impl WorktreeManager {
         self.git_log = enabled;
     }
 
+    /// Set the job-configured PR merge target branch used for worker branch naming.
+    ///
+    /// When set, worker branches are named `{target}/worker-{n}-{slug}` which
+    /// makes the parent-child relationship explicit in GitHub/GitLab UIs.
+    /// Must be called before `create_worktree()` to take effect.
+    pub fn set_target_branch(&mut self, branch: String) {
+        if !branch.is_empty() {
+            self.target_branch = Some(branch);
+        }
+    }
+
     /// Create a worktree for the given worker.
     ///
     /// Creates `.mahalaxmi/worktrees/worker-{id}/` with a dedicated branch.
@@ -279,34 +356,50 @@ impl WorktreeManager {
             tracing::info!(worker_id = %worker_id, task = %task_id.as_str(), "git: creating worktree");
         }
 
-        // Ensure .mahalaxmi/ is in .gitignore
-        self.ensure_gitignore()?;
-
         let worktree_dir = self
             .project_root
             .join(".mahalaxmi")
             .join("worktrees")
             .join(format!("worker-{}", worker_id.as_u32()));
 
-        let branch_name = match (&self.cycle_label, &self.cycle_short_id) {
-            (Some(label), Some(short_id)) => format!(
-                "mahalaxmi/{}-{}/worker-{}-{}",
-                label,
-                short_id,
-                worker_id.as_u32(),
-                sanitize_branch_name(task_id.as_str()),
-            ),
-            (Some(label), None) => format!(
-                "mahalaxmi/{}/worker-{}-{}",
-                label,
-                worker_id.as_u32(),
-                sanitize_branch_name(task_id.as_str()),
-            ),
-            (None, _) => format!(
-                "mahalaxmi/worker-{}-{}",
-                worker_id.as_u32(),
-                sanitize_branch_name(task_id.as_str()),
-            ),
+        // Worker branch naming convention.
+        //
+        // Format: {target}--{task_slug}-{8-char-guid}
+        // Example: test/orchestration-smoke-test--append-readme-smoke-marker-a1b2c3d4
+        //
+        // The task slug carries the topic so the branch is human-readable.
+        // The short GUID suffix guarantees uniqueness across retries and cycles.
+        //
+        // We use `--` (not `/`) to separate the target from the task slug.
+        // Using `{target}/{slug}` makes workers children of the target in git's
+        // ref namespace; when refs/heads/{target} already exists as a leaf ref,
+        // git rejects all worker pushes with "cannot lock ref … exists".
+        let task_slug = task_to_slug(task_id.as_str());
+        let uid = uuid::Uuid::new_v4().to_string();
+        let short_uid = &uid[..8];
+        let branch_name = if let Some(ref target) = self.target_branch {
+            format!("{}--{}-{}", target, task_slug, short_uid)
+        } else {
+            match (&self.cycle_label, &self.cycle_short_id) {
+                (Some(label), Some(short_id)) => format!(
+                    "mahalaxmi/{}-{}/{}-{}",
+                    label,
+                    short_id,
+                    task_slug,
+                    short_uid,
+                ),
+                (Some(label), None) => format!(
+                    "mahalaxmi/{}/{}-{}",
+                    label,
+                    task_slug,
+                    short_uid,
+                ),
+                (None, _) => format!(
+                    "mahalaxmi/{}-{}",
+                    task_slug,
+                    short_uid,
+                ),
+            }
         };
 
         // Create parent directory
@@ -662,27 +755,41 @@ impl WorktreeManager {
         }
         let stash_out = run_git(&self.project_root, &["stash"], &self.i18n).unwrap_or_default();
         let stashed = !stash_out.contains("No local changes to save");
-        // Fast-forward local branch to match remote.
-        if let Err(e) = run_git(
+        // Sync local branch to remote. Try fast-forward first; if the branches
+        // have diverged (e.g. previous cycle PRs were merged directly into the
+        // remote), reset hard to origin so workers always start from the latest
+        // remote HEAD rather than a stale local commit.
+        let remote_ref = format!("origin/{}", branch);
+        let synced = run_git(
             &self.project_root,
-            &["merge", "--ff-only", &format!("origin/{}", branch)],
+            &["merge", "--ff-only", &remote_ref],
             &self.i18n,
-        ) {
-            tracing::warn!(
-                branch = %branch,
-                error = %e,
-                "fast-forward after fetch failed — workers will branch from local state"
-            );
-            // Restore stashed changes so local work is not lost.
-            if stashed {
-                if let Err(e) = run_git_silent(&self.project_root, &["stash", "pop"], &self.i18n) {
-                    tracing::debug!(error = %e, "stash pop after failed fast-forward: nothing to restore");
-                }
+        )
+        .is_ok();
+        if !synced {
+            // Fast-forward failed — branches have diverged. Reset hard to the
+            // remote ref so workers branch from the correct remote state.
+            if let Err(e) = run_git(
+                &self.project_root,
+                &["reset", "--hard", &remote_ref],
+                &self.i18n,
+            ) {
+                tracing::warn!(
+                    branch = %branch,
+                    error = %e,
+                    "reset --hard to remote failed — workers will branch from local state"
+                );
+            } else {
+                tracing::info!(
+                    branch = %branch,
+                    "target branch diverged from remote — reset to remote HEAD"
+                );
             }
-        } else if stashed {
-            // Fast-forward succeeded; restore stashed local work.  If the
-            // pop conflicts (the incoming commits already contain the same
-            // change), drop the stash — the canonical version is now in HEAD.
+        }
+        if stashed {
+            // Restore stashed local work after syncing to remote. If the pop
+            // conflicts (the incoming commits already contain the same change),
+            // drop the stash — the canonical version is now in HEAD.
             if run_git(&self.project_root, &["stash", "pop"], &self.i18n).is_err() {
                 if let Err(e) = run_git_silent(&self.project_root, &["stash", "drop"], &self.i18n) {
                     tracing::debug!(error = %e, "stash drop: nothing to drop");
@@ -713,11 +820,12 @@ impl WorktreeManager {
     /// stage.
     ///
     /// Used by the `BranchAndPr` strategy.
+    ///
     /// Returns a `Vec<String>` of file names where concurrent edits were detected
     /// and auto-resolved with `-X ours` (this worker's version was kept). An empty
-    /// vec means no concurrent edits were detected. The caller should warn the user
-    /// when the list is non-empty, since earlier workers' edits to those files are
-    /// silently overwritten.
+    /// vec means no concurrent edits were detected on any file. The caller should
+    /// warn the user when the list is non-empty, since earlier workers' edits to
+    /// those files are silently overwritten.
     pub fn push_branch(
         &self,
         worker_id: WorkerId,
@@ -732,11 +840,11 @@ impl WorktreeManager {
 
         if let Some(target) = target_branch {
             // Commit any pending (uncommitted) changes in the worktree before
-            // merging remote changes.  The most common source is Cargo.lock
-            // regenerated by `cargo build`/`cargo check` in the verify step,
-            // which runs after the worker's last explicit commit.  Without
-            // this step, git refuses to merge with "your local changes to
-            // Cargo.lock would be overwritten".  Errors are intentionally
+            // merging remote changes.  Common sources include lock files
+            // (Cargo.lock, package-lock.json) regenerated by build/verify
+            // steps, or derived files written after the worker's last explicit
+            // commit.  Without this step, git refuses to merge with "your
+            // local changes would be overwritten".  Errors are intentionally
             // ignored: if there is nothing to stage the add is a no-op, and
             // the commit fails silently with "nothing to commit".
             if let Err(e) = run_git_silent(&info.path, &["add", "-A"], &self.i18n) {
@@ -744,7 +852,7 @@ impl WorktreeManager {
             }
             if let Err(e) = run_git_silent(
                 &info.path,
-                &["commit", "-m", "chore: generated files (Cargo.lock etc.)"],
+                &["commit", "-m", "chore: commit generated/derived files before merge"],
                 &self.i18n,
             ) {
                 tracing::debug!(error = %e, "pre-merge commit: nothing to commit");
@@ -757,7 +865,7 @@ impl WorktreeManager {
             // their common ancestor.  If any overlap exists and the merge
             // below auto-resolves with -X ours, those files will silently
             // favour this worker's version.  We capture the list here so we
-            // can warn the caller after a successful merge.
+            // can warn the user after a successful merge.
             let overlap_files: Vec<String> = {
                 let base = run_git_silent(
                     &info.path,
@@ -916,7 +1024,106 @@ impl WorktreeManager {
             // On error assume commits exist — do not skip the push.
             return true;
         };
-        out.trim().parse::<u32>().unwrap_or(0) > 0
+        let count = out.trim().parse::<u32>().unwrap_or(0);
+        tracing::debug!(
+            worker_id = %worker_id,
+            base_ref = %remote_ref,
+            commit_count = count,
+            "rev-list: commits ahead of base — determines whether PR is created"
+        );
+        count > 0
+    }
+
+    /// Return the name of the currently checked-out branch in the project root.
+    ///
+    /// Used as a fallback merge target when `git_target_branch` is not configured
+    /// so that PRs are never opened against a detached HEAD or `HEAD` literal.
+    pub fn get_current_branch(&self) -> Option<String> {
+        run_git(
+            &self.project_root,
+            &["rev-parse", "--abbrev-ref", "HEAD"],
+            &self.i18n,
+        )
+        .ok()
+        .map(|s| s.trim().to_owned())
+        .filter(|s| s != "HEAD") // detached HEAD — not a real branch name
+    }
+
+    /// Return the HEAD commit hash of the worker's worktree.
+    ///
+    /// Used to verify that the commit is reachable from the merge target after
+    /// an auto-merge. Returns `None` on any error.
+    pub fn get_worker_head_commit(&self, worker_id: WorkerId) -> Option<String> {
+        let info = self.active_worktrees.get(&worker_id)?;
+        run_git(&info.path, &["rev-parse", "HEAD"], &self.i18n)
+            .ok()
+            .map(|s| s.trim().to_owned())
+    }
+
+    /// Verify that `commit_hash` is reachable from `origin/{target_branch}`.
+    ///
+    /// Fetches the target branch from origin, then uses `git merge-base --is-ancestor`
+    /// to confirm the worker's top commit was incorporated by the auto-merge.
+    ///
+    /// Returns `Ok(())` when the commit is confirmed on the target. Returns `Err`
+    /// with a descriptive message when the commit is missing (merge may still be
+    /// in progress or the auto-merge command failed silently).
+    ///
+    /// Non-fatal git errors (fetch network hiccup) return `Ok(())` to avoid
+    /// blocking the cycle on transient connectivity issues — the log captures
+    /// enough detail for manual audit.
+    pub fn verify_merge_on_target(
+        &self,
+        commit_hash: &str,
+        target_branch: &str,
+    ) -> MahalaxmiResult<()> {
+        // Fetch so we see the latest state of the remote target branch.
+        if let Err(e) = run_git(
+            &self.project_root,
+            &["fetch", "origin", target_branch],
+            &self.i18n,
+        ) {
+            tracing::warn!(
+                target = %target_branch,
+                error = %e,
+                "verify_merge_on_target: fetch failed — skipping ancestry check"
+            );
+            return Ok(());
+        }
+
+        let remote_ref = format!("origin/{}", target_branch);
+        // `git merge-base --is-ancestor A B` exits 0 when A is an ancestor of B.
+        let output = Command::new("git")
+            .args(["merge-base", "--is-ancestor", commit_hash, &remote_ref])
+            .current_dir(&self.project_root)
+            .output()
+            .map_err(|e| {
+                MahalaxmiError::platform(
+                    &self.i18n,
+                    "worktree-git-exec-failed",
+                    &[("cmd", "git merge-base --is-ancestor"), ("detail", &e.to_string())],
+                )
+            })?;
+
+        if output.status.success() {
+            if self.git_log {
+                tracing::info!(
+                    commit = %commit_hash,
+                    target = %target_branch,
+                    "git: verified — worker commit is on merge target"
+                );
+            }
+            Ok(())
+        } else {
+            Err(MahalaxmiError::Platform {
+                message: format!(
+                    "Worker commit {commit_hash} is NOT reachable from \
+                     origin/{target_branch} — auto-merge may have failed silently. \
+                     Check the PR on GitHub and merge manually if needed."
+                ),
+                i18n_key: "git.merge_verification_failed".to_owned(),
+            })
+        }
     }
 
     /// Create a pull request / merge request for a worker branch.
@@ -982,12 +1189,56 @@ impl WorktreeManager {
                     if self.git_log {
                         tracing::info!(worker_id = %worker_id, pr_url = %url, "git: auto-merging pull request");
                     }
-                    run_gh(
+                    let merge_result = run_gh(
                         &self.project_root,
                         &["pr", "merge", &url, "--merge"],
                         token,
                         &self.i18n,
-                    )?;
+                    );
+                    match merge_result {
+                        Ok(_) => {}
+                        Err(ref e)
+                            if {
+                                let msg = e.to_string();
+                                msg.contains("Base branch was modified")
+                                    || msg.contains("base branch was modified")
+                            } =>
+                        {
+                            // Another worker's PR merged first; rebase this branch
+                            // onto the updated target and retry the merge once.
+                            tracing::warn!(
+                                worker_id = %worker_id,
+                                pr_url = %url,
+                                "git: base branch modified — rebasing onto {} and retrying",
+                                target_branch
+                            );
+                            run_git(
+                                &info.path,
+                                &["fetch", "origin", target_branch],
+                                &self.i18n,
+                            )?;
+                            run_git(
+                                &info.path,
+                                &[
+                                    "rebase",
+                                    &format!("origin/{}", target_branch),
+                                ],
+                                &self.i18n,
+                            )?;
+                            run_git(
+                                &info.path,
+                                &["push", "--force-with-lease"],
+                                &self.i18n,
+                            )?;
+                            run_gh(
+                                &self.project_root,
+                                &["pr", "merge", &url, "--merge"],
+                                token,
+                                &self.i18n,
+                            )?;
+                        }
+                        Err(e) => return Err(e),
+                    }
                     if self.git_log {
                         tracing::info!(worker_id = %worker_id, pr_url = %url, "git: pull request merged");
                     }
@@ -1018,16 +1269,60 @@ impl WorktreeManager {
                     // `glab mr create --auto-merge` only works when pipelines are
                     // configured. Instead, extract the MR IID from the returned URL
                     // (…/merge_requests/{iid}) and merge immediately.
-                    let iid = url.rsplit('/').next().unwrap_or("");
+                    let iid = url.rsplit('/').next().unwrap_or("").to_string();
                     if self.git_log {
                         tracing::info!(worker_id = %worker_id, pr_url = %url, "git: auto-merging pull request");
                     }
-                    run_glab(
+                    let merge_result = run_glab(
                         &self.project_root,
-                        &["mr", "merge", iid, "--yes"],
+                        &["mr", "merge", &iid, "--yes"],
                         token,
                         &self.i18n,
-                    )?;
+                    );
+                    match merge_result {
+                        Ok(_) => {}
+                        Err(ref e)
+                            if {
+                                let msg = e.to_string();
+                                msg.contains("Base branch was modified")
+                                    || msg.contains("base branch was modified")
+                                    || msg.contains("MR is not mergeable")
+                            } =>
+                        {
+                            // Rebase onto updated target and retry.
+                            tracing::warn!(
+                                worker_id = %worker_id,
+                                pr_url = %url,
+                                "git: GitLab base branch modified — rebasing onto {} and retrying",
+                                target_branch
+                            );
+                            run_git(
+                                &info.path,
+                                &["fetch", "origin", target_branch],
+                                &self.i18n,
+                            )?;
+                            run_git(
+                                &info.path,
+                                &[
+                                    "rebase",
+                                    &format!("origin/{}", target_branch),
+                                ],
+                                &self.i18n,
+                            )?;
+                            run_git(
+                                &info.path,
+                                &["push", "--force-with-lease"],
+                                &self.i18n,
+                            )?;
+                            run_glab(
+                                &self.project_root,
+                                &["mr", "merge", &iid, "--yes"],
+                                token,
+                                &self.i18n,
+                            )?;
+                        }
+                        Err(e) => return Err(e),
+                    }
                     if self.git_log {
                         tracing::info!(worker_id = %worker_id, pr_url = %url, "git: pull request merged");
                     }
@@ -1111,20 +1406,48 @@ impl WorktreeManager {
     }
 }
 
-/// Sanitize a string for use as a git branch name component.
-fn sanitize_branch_name(s: &str) -> String {
-    s.chars()
+/// Convert a task name/ID to a human-readable git branch slug (BUG-007).
+///
+/// - Lowercases all characters
+/// - Replaces underscores and whitespace with hyphens
+/// - Strips other non-alphanumeric characters
+/// - Collapses consecutive hyphens to one
+/// - Trims leading/trailing hyphens
+/// - Limits to 50 chars so total branch paths stay well under the 250-char git limit
+fn task_to_slug(s: &str) -> String {
+    let raw: String = s
+        .to_lowercase()
+        .chars()
         .map(|c| {
-            if c.is_alphanumeric() || c == '-' || c == '_' {
+            if c.is_alphanumeric() || c == '-' {
                 c
-            } else {
+            } else if c == '_' || c.is_whitespace() {
                 '-'
+            } else {
+                '\0' // will be filtered
             }
         })
-        .collect::<String>()
-        .chars()
-        .take(40) // Limit branch name length
-        .collect()
+        .filter(|&c| c != '\0')
+        .collect();
+
+    // Collapse consecutive hyphens
+    let mut slug = String::with_capacity(raw.len());
+    let mut prev_hyphen = false;
+    for c in raw.chars() {
+        if c == '-' {
+            if !prev_hyphen {
+                slug.push(c);
+            }
+            prev_hyphen = true;
+        } else {
+            slug.push(c);
+            prev_hyphen = false;
+        }
+    }
+
+    // Trim leading/trailing hyphens and cap length
+    let slug = slug.trim_matches('-');
+    slug.chars().take(50).collect()
 }
 
 /// Run a `gh` CLI command and return its stdout as a String.
@@ -1201,8 +1524,166 @@ fn run_cli_tool(
     }
 }
 
-/// Run a git command and return its stdout as a String.
+/// Pre-flight check: ensure `branch` exists on `origin`, creating it if needed.
 ///
+/// Strategy (in order):
+/// 1. `git ls-remote --exit-code origin <branch>` — branch already on remote → done.
+/// 2. Branch missing (exit 2): check if a local branch with that name exists.
+///    - Exists locally → `git push -u origin <branch>` to publish it.
+///    - Doesn't exist locally → create it from the current HEAD commit and push.
+/// 3. Remote unreachable (exit 128, auth failure, DNS, etc.) → return `Err` with a
+///    clear message. This is the only case that hard-blocks the cycle.
+///
+/// The goal is: never block when the user is starting a brand-new feature branch —
+/// Mahalaxmi creates it transparently. Only block on genuine connectivity / auth
+/// failures that would prevent workers from pushing their branches later.
+pub fn verify_remote_branch(
+    project_root: &Path,
+    branch: &str,
+    i18n: &I18nService,
+) -> MahalaxmiResult<()> {
+    tracing::info!(branch = %branch, "Pre-flight: checking remote branch");
+
+    // Step 1: probe the remote.
+    let ls_output = Command::new("git")
+        .args(["ls-remote", "--exit-code", "origin", branch])
+        .current_dir(project_root)
+        .output()
+        .map_err(|e| {
+            MahalaxmiError::platform(
+                i18n,
+                "worktree-git-exec-failed",
+                &[("cmd", "git ls-remote"), ("detail", &e.to_string())],
+            )
+        })?;
+
+    if ls_output.status.success() {
+        tracing::info!(branch = %branch, "Pre-flight: remote branch exists");
+        return Ok(());
+    }
+
+    // Exit code 128 = remote unreachable (auth, DNS, network). Hard error.
+    // Exit code 2   = ref not found. We can create it.
+    let exit_code = ls_output.status.code().unwrap_or(1);
+    if exit_code == 128 {
+        let stderr = String::from_utf8_lossy(&ls_output.stderr);
+        let msg = stderr.trim().to_string();
+        tracing::error!(branch = %branch, stderr = %msg, "Pre-flight: remote unreachable");
+        return Err(MahalaxmiError::Platform {
+            message: format!(
+                "Cannot reach remote 'origin' to verify branch '{branch}': {msg}. \
+                 Check your GitHub credentials and network connectivity."
+            ),
+            i18n_key: "git.remote_unreachable".to_owned(),
+        });
+    }
+
+    // Step 2: branch doesn't exist on remote — push HEAD directly to the
+    // remote ref. Avoids `git branch {branch}` which fails when previous
+    // worker cycles left sub-refs under refs/heads/{branch}/ (e.g.
+    // refs/heads/test/foo/worker-2-bar), because git can't create a leaf ref
+    // and a ref-directory with the same path component simultaneously.
+    tracing::info!(branch = %branch, "Pre-flight: branch not on remote — pushing HEAD directly");
+    let refspec = format!("HEAD:refs/heads/{branch}");
+    run_git(
+        project_root,
+        &["push", "origin", &refspec],
+        i18n,
+    )
+    .map_err(|e| MahalaxmiError::Platform {
+        message: format!(
+            "Branch '{branch}' could not be created on remote: {e}. \
+             Verify your GitHub credentials are valid (check GH_TOKEN or \
+             run `git push origin HEAD:refs/heads/{branch}` manually)."
+        ),
+        i18n_key: "git.branch_push_failed".to_owned(),
+    })?;
+
+    tracing::info!(branch = %branch, "Pre-flight: branch ready on remote");
+    Ok(())
+}
+
+/// Pre-flight check: verify the GitHub token can authenticate and has the
+/// `repo` scope required to open and merge pull requests.
+///
+/// Runs `gh auth status` which exits 0 when the active token is valid and 1
+/// when it is missing or expired.  An additional `gh api user` call confirms
+/// the token can reach the GitHub API (catches firewall / VPN issues).
+///
+/// Call this **before** creating an `OrchestrationService` when the strategy
+/// is `BranchAndPr` + GitHub so cycles fail fast instead of spending manager
+/// time only to hit auth failures at dispatch time.
+pub fn check_github_token(
+    project_root: &Path,
+    token: Option<&str>,
+    i18n: &I18nService,
+) -> MahalaxmiResult<()> {
+    tracing::info!("Pre-flight: checking GitHub token validity");
+
+    let mut cmd = Command::new("gh");
+    cmd.args(["auth", "status"]).current_dir(project_root);
+    if let Some(t) = token {
+        cmd.env("GH_TOKEN", t);
+    }
+    let output = cmd.output().map_err(|e| {
+        MahalaxmiError::platform(
+            i18n,
+            "worktree-git-exec-failed",
+            &[("cmd", "gh auth status"), ("detail", &e.to_string())],
+        )
+    })?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        tracing::error!(stderr = %stderr.trim(), "Pre-flight: GitHub token invalid or gh not installed");
+        return Err(MahalaxmiError::Platform {
+            message: format!(
+                "GitHub token pre-flight failed: {}. \
+                 Ensure GH_TOKEN is set to a valid token with 'repo' scope \
+                 or run `gh auth login` to authenticate.",
+                stderr.trim()
+            ),
+            i18n_key: "git.github_token_invalid".to_owned(),
+        });
+    }
+
+    // Quick connectivity check — `gh api user` confirms the token can reach
+    // the GitHub API (catches VPN / firewall issues that `gh auth status`
+    // does not detect because it reads the cached token without a network call).
+    let mut api_cmd = Command::new("gh");
+    api_cmd.args(["api", "user"]).current_dir(project_root);
+    if let Some(t) = token {
+        api_cmd.env("GH_TOKEN", t);
+    }
+    let api_output = api_cmd.output();
+    match api_output {
+        Ok(o) if !o.status.success() => {
+            let stderr = String::from_utf8_lossy(&o.stderr);
+            tracing::error!(
+                stderr = %stderr.trim(),
+                "Pre-flight: GitHub API unreachable — check network / VPN"
+            );
+            return Err(MahalaxmiError::Platform {
+                message: format!(
+                    "GitHub API pre-flight failed: {}. \
+                     Verify network connectivity and that the GitHub token has \
+                     'repo' scope.",
+                    stderr.trim()
+                ),
+                i18n_key: "git.github_api_unreachable".to_owned(),
+            });
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, "Pre-flight: gh api user failed to spawn — skipping connectivity check");
+        }
+        Ok(_) => {
+            tracing::info!("Pre-flight: GitHub token valid and API reachable");
+        }
+    }
+
+    Ok(())
+}
+
 /// Logs at WARN on non-zero exit. Use this when failure is unexpected and
 /// the caller needs to know about it (e.g. push, merge, worktree add).
 fn run_git(cwd: &Path, args: &[&str], i18n: &I18nService) -> MahalaxmiResult<String> {

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 05: StreamMonitor.
 
 use mahalaxmi_core::i18n::locale::SupportedLocale;

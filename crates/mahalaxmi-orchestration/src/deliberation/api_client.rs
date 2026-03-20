@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Anthropic Messages API client for adversarial deliberation turns.
 
 use mahalaxmi_core::error::MahalaxmiError;
@@ -18,6 +16,10 @@ pub struct ChatMessage {
 ///
 /// Wraps `reqwest` to send system-prompted conversations and return
 /// the first assistant text block from the response.
+///
+/// `Clone` is cheap — `reqwest::Client` is backed by an `Arc` so cloning
+/// creates a second handle sharing the same connection pool.
+#[derive(Clone)]
 pub struct AnthropicApiClient {
     /// The model identifier to use for each request (e.g. `"claude-haiku-4-5-20251001"`).
     pub model: String,

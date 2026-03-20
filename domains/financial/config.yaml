@@ -1,0 +1,46 @@
+id: financial
+description: >-
+  Multi-agent financial document analysis with four specialist analyst roles.
+  Each analyst focuses on a distinct financial dimension. Manager synthesizes
+  analyst reports into a comprehensive assessment.
+
+manager_uncapped:
+  file: manager.prompt
+
+manager_capped:
+  file: manager.prompt
+
+worker_system_role:
+  file: worker.prompt
+
+decomposition_strategy:
+  role_based:
+    roles:
+      - revenue_analyst
+      - cost_analyst
+      - risk_analyst
+      - growth_analyst
+
+consensus_algorithm:
+  best_of_n:
+    selection_criteria: >-
+      Select the most thorough and evidence-based analysis that cites specific
+      figures from the document with proper context, units, and time periods.
+      Prefer analyses that quantify findings over qualitative-only assessments.
+
+output_format:
+  json_export:
+    output_file: financial-analysis.json
+
+input_format:
+  document_file:
+    accepted_types:
+      - pdf
+      - txt
+      - csv
+    max_file_size_mb: 50
+
+domain_tags:
+  - financial
+  - analysis
+  - document

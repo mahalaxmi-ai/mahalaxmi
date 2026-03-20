@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::i18n::{locale::SupportedLocale, I18nService};
 use mahalaxmi_core::types::{ActionType, MatchType};
 use mahalaxmi_detection::{

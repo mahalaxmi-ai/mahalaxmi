@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Orchestration service — drives the full cycle lifecycle.
 //!
 //! `OrchestrationService` coordinates the state machine, manager prompt dispatch,
@@ -10,6 +8,7 @@
 use std::sync::Arc;
 
 use chrono::Utc;
+use mahalaxmi_core::domain::{ConsensusAlgorithm, DomainConfig};
 use mahalaxmi_core::i18n::I18nService;
 use mahalaxmi_core::types::{
     ConsensusStrategy, CycleId, DeveloperId, DeveloperRegistry, DeveloperSession, GitMergeStrategy,
@@ -35,6 +34,148 @@ use crate::prompt::parser::ManagerOutputParser;
 use crate::queue::WorkerQueue;
 use crate::state_machine::CycleStateMachine;
 use mahalaxmi_core::config::VerificationConfig;
+
+/// Default synthesis manager session timeout in seconds.
+const SYNTHESIS_TIMEOUT_SECS: u64 = 120;
+
+/// Error returned when a synthesis manager session fails.
+///
+/// Returned by [`OrchestrationService::run_synthesis_manager`] when the AI
+/// provider times out or returns an error. Propagates without panicking — no
+/// `unwrap()` calls exist in the synthesis code paths.
+#[derive(Debug)]
+pub enum SynthesisManagerError {
+    /// The synthesis AI session timed out or the provider returned an error.
+    Failed { message: String },
+}
+
+impl std::fmt::Display for SynthesisManagerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SynthesisManagerError::Failed { message } => {
+                write!(f, "Synthesis manager session failed: {message}")
+            }
+        }
+    }
+}
+
+impl std::error::Error for SynthesisManagerError {}
+
+/// Locate the `claude` CLI binary for synthesis invocation.
+///
+/// Checks Claude Code's default install path first, then falls back to
+/// a PATH lookup via `which`. Returns `None` when no usable binary is found.
+fn find_synthesis_claude_binary() -> Option<String> {
+    if let Ok(home) = std::env::var("HOME") {
+        let default = format!("{home}/.claude/local/claude");
+        if std::path::Path::new(&default).exists() {
+            return Some(default);
+        }
+    }
+    let output = std::process::Command::new("which")
+        .arg("claude")
+        .output()
+        .ok()?;
+    if output.status.success() {
+        let path = String::from_utf8(output.stdout).ok()?;
+        let path = path.trim().to_string();
+        if !path.is_empty() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+/// Call the Anthropic REST API with the synthesis prompt and return the text response.
+async fn call_synthesis_api(api_key: &str, prompt: &str) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let body = serde_json::json!({
+        "model": "claude-sonnet-4-6",
+        "max_tokens": 8192,
+        "messages": [{ "role": "user", "content": prompt }]
+    });
+
+    let resp = client
+        .post("https://api.anthropic.com/v1/messages")
+        .header("x-api-key", api_key)
+        .header("anthropic-version", "2023-06-01")
+        .header("content-type", "application/json")
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Anthropic API request failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let text = resp.text().await.unwrap_or_default();
+        return Err(format!("Anthropic API returned {status}: {text}"));
+    }
+
+    let json: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse Anthropic API response: {e}"))?;
+
+    json["content"][0]["text"]
+        .as_str()
+        .ok_or_else(|| "Anthropic API response missing content[0].text".to_owned())
+        .map(|s| s.to_owned())
+}
+
+/// Invoke the `claude` CLI in print mode with the synthesis prompt.
+async fn call_synthesis_cli(binary: &str, prompt: &str) -> Result<String, String> {
+    use tokio::io::AsyncWriteExt;
+
+    let mut child = tokio::process::Command::new(binary)
+        .arg("--print")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| format!("Failed to spawn claude CLI ({binary}): {e}"))?;
+
+    if let Some(mut stdin) = child.stdin.take() {
+        stdin
+            .write_all(prompt.as_bytes())
+            .await
+            .map_err(|e| format!("Failed to write to claude CLI stdin: {e}"))?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .await
+        .map_err(|e| format!("Failed to wait for claude CLI: {e}"))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "claude CLI exited with status {}",
+            output.status
+        ));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
+}
+
+/// Invoke the AI provider with the synthesis prompt.
+///
+/// Priority order:
+/// 1. `ANTHROPIC_API_KEY` env var → Anthropic REST API.
+/// 2. `claude` CLI binary → `claude --print` pipe mode.
+/// 3. Neither → immediate error.
+async fn run_synthesis_ai_call(prompt: &str) -> Result<String, String> {
+    if let Ok(api_key) = std::env::var("ANTHROPIC_API_KEY") {
+        if !api_key.trim().is_empty() {
+            return call_synthesis_api(&api_key, prompt).await;
+        }
+    }
+    if let Some(binary) = find_synthesis_claude_binary() {
+        return call_synthesis_cli(&binary, prompt).await;
+    }
+    Err(
+        "No AI provider available for synthesis: set ANTHROPIC_API_KEY or install the claude CLI"
+            .to_owned(),
+    )
+}
 
 /// Signal emitted when all workers in a batch have resolved (success or permanent failure).
 ///
@@ -89,7 +230,7 @@ pub enum OrchestrationCommand {
 }
 
 /// Configuration for starting an orchestration cycle.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct CycleConfig {
     /// Project root directory.
     pub project_root: String,
@@ -133,6 +274,28 @@ pub struct CycleConfig {
     pub enable_validation: bool,
     /// Provider to use for validation. If None, uses `provider_id`.
     pub validator_provider_id: Option<String>,
+    /// Active domain configuration for this cycle.
+    ///
+    /// Looked up from `AppState::domain_registry` at cycle start using the key
+    /// `"coding"`. When `Some`, the domain's prompt strings are injected into
+    /// both `ManagerPromptConfig::domain` and `WorkerPromptConfig::domain`,
+    /// overriding the built-in hardcoded strings. When `None` (registry empty
+    /// or domain not found), the built-in defaults are used unchanged.
+    pub active_domain: Option<Arc<dyn DomainConfig>>,
+}
+
+impl std::fmt::Debug for CycleConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CycleConfig")
+            .field("project_root", &self.project_root)
+            .field("provider_id", &self.provider_id)
+            .field("manager_count", &self.manager_count)
+            .field("worker_count", &self.worker_count)
+            .field("max_retries", &self.max_retries)
+            .field("requirements_len", &self.requirements.len())
+            .field("active_domain", &self.active_domain.as_ref().map(|d| d.id()))
+            .finish_non_exhaustive()
+    }
 }
 
 /// Describes a multi-developer orchestration cycle.
@@ -146,7 +309,7 @@ pub struct CycleConfig {
 ///
 /// When `developer_sessions` is empty the cycle behaves identically to a
 /// single-developer cycle (backward compatible).
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct StartCycleRequest {
     /// Core cycle configuration shared by all developers in the session.
     pub config: CycleConfig,
@@ -161,6 +324,16 @@ pub struct StartCycleRequest {
     /// `DeveloperRegistry::from_config`.
     #[allow(dead_code)]
     pub developer_registry: DeveloperRegistry,
+}
+
+impl std::fmt::Debug for StartCycleRequest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("StartCycleRequest")
+            .field("config", &self.config)
+            .field("developer_sessions", &self.developer_sessions)
+            .field("developer_registry", &self.developer_registry)
+            .finish()
+    }
 }
 
 /// Handle returned when a cycle is started, for sending commands and receiving events.
@@ -259,6 +432,15 @@ pub struct OrchestrationService {
     codebase_index: Option<std::sync::Arc<mahalaxmi_indexing::CodebaseIndex>>,
     /// Configuration for the context router (weights, token budget).
     context_router_config: ContextRouterConfig,
+    /// Path to the Living Skill Registry SQLite database (Phase 28).
+    ///
+    /// When `Some` (and the `living-skills` feature is compiled in), the
+    /// `SkillMatcher` pre-loads domain context before `DefaultContextRouter`.
+    #[cfg(feature = "living-skills")]
+    skill_db_path: Option<std::path::PathBuf>,
+    /// Project UUID scoping skill profile lookups (Phase 28).
+    #[cfg(feature = "living-skills")]
+    skill_project_id: Option<uuid::Uuid>,
     /// Active developer sessions for multi-developer workspace cycles.
     ///
     /// Empty for single-developer cycles (backward compatible). Populated via
@@ -287,12 +469,25 @@ pub struct OrchestrationService {
     /// the current batch resolve (success or permanent failure). Subscribers
     /// obtain a receiver via [`OrchestrationService::subscribe_batch_complete`].
     batch_complete_tx: watch::Sender<Option<BatchCompleteSignal>>,
+    /// Collected worker terminal output strings for the current cycle.
+    ///
+    /// Populated via [`record_worker_output`] as workers complete. Used by
+    /// [`synthesis_context`] to build the synthesis prompt when the domain
+    /// algorithm is `ConsensusAlgorithm::Synthesis`, and by
+    /// [`apply_output_format`] to format the cycle output file.
+    worker_outputs: Vec<String>,
     /// Monotonically increasing batch counter; incremented each time a batch
     /// completes and populates the `batch_number` field of `BatchCompleteSignal`.
     batch_number: usize,
     /// Count of workers dispatched (via `activate_worker`) in the current batch
     /// that have not yet resolved. When it reaches zero the batch is complete.
     batch_active_count: usize,
+    /// Textual output from the synthesis manager session.
+    ///
+    /// Populated by [`run_synthesis_manager`] after a successful AI session.
+    /// Exposed via [`synthesis_result`] so that `apply_output_format()` and
+    /// the output formatter can write `legal-analysis.md` or equivalent.
+    synthesis_result: Option<String>,
 }
 
 impl OrchestrationService {
@@ -333,6 +528,10 @@ impl OrchestrationService {
             last_validation_verdict: None,
             codebase_index: None,
             context_router_config: ContextRouterConfig::default(),
+            #[cfg(feature = "living-skills")]
+            skill_db_path: None,
+            #[cfg(feature = "living-skills")]
+            skill_project_id: None,
             developer_sessions: Vec::new(),
             developer_registry: DeveloperRegistry::new(),
             manager_developer_ids: std::collections::HashMap::new(),
@@ -340,6 +539,8 @@ impl OrchestrationService {
             batch_complete_tx,
             batch_number: 0,
             batch_active_count: 0,
+            worker_outputs: Vec::new(),
+            synthesis_result: None,
         }
     }
 
@@ -361,6 +562,163 @@ impl OrchestrationService {
     /// Must be called before `prepare_worker_prompts()` to take effect.
     pub fn set_context_router_config(&mut self, config: ContextRouterConfig) {
         self.context_router_config = config;
+    }
+
+    /// Record a worker's terminal output for post-cycle processing.
+    ///
+    /// Call this as each worker completes. The collected outputs are used by
+    /// [`synthesis_context`] (for `ConsensusAlgorithm::Synthesis`) and by
+    /// [`apply_output_format`] (for non-`PullRequest` domain output formats).
+    pub fn record_worker_output(&mut self, output: String) {
+        self.worker_outputs.push(output);
+    }
+
+    /// Build the full synthesis prompt if the active domain uses
+    /// `ConsensusAlgorithm::Synthesis`, or return `None` otherwise.
+    ///
+    /// When `Some`, the returned string is the complete manager prompt that
+    /// the driver should use to spawn a synthesis manager session. The
+    /// synthesis manager session output replaces the standard cycle output.
+    pub fn synthesis_context(&self) -> Option<String> {
+        let domain = self.config.active_domain.as_ref()?;
+        let synthesis_prompt = match domain.consensus_algorithm() {
+            ConsensusAlgorithm::Synthesis { synthesis_prompt } => synthesis_prompt,
+            _ => return None,
+        };
+
+        let mut prompt = format!("{synthesis_prompt}\n\n");
+        for (idx, output) in self.worker_outputs.iter().enumerate() {
+            prompt.push_str(&format!(
+                "## Worker {} Output\n\n{}\n\n",
+                idx + 1,
+                output.trim()
+            ));
+        }
+        Some(prompt)
+    }
+
+    /// Get the synthesis manager's textual output, if a session has completed.
+    ///
+    /// Returns `None` when no synthesis session has run yet, or when the active
+    /// domain does not use `ConsensusAlgorithm::Synthesis`. The driver and
+    /// `apply_output_format()` read this to produce `legal-analysis.md` or
+    /// equivalent structured output files.
+    pub fn synthesis_result(&self) -> Option<&str> {
+        self.synthesis_result.as_deref()
+    }
+
+    /// Store the output from a completed synthesis manager session.
+    ///
+    /// Called automatically by [`run_synthesis_manager`] on success. May also
+    /// be called by the driver when the synthesis session was managed
+    /// externally (e.g., via a PTY agent session).
+    pub fn set_synthesis_result(&mut self, output: String) {
+        self.synthesis_result = Some(output);
+    }
+
+    /// Spawn a synthesis manager AI session and store the result.
+    ///
+    /// Should be called by the driver after **all workers have completed**,
+    /// when the active domain uses `ConsensusAlgorithm::Synthesis`.
+    ///
+    /// The method:
+    /// 1. Calls `synthesis_context()` — returns `Ok(())` immediately when the
+    ///    domain does not use `Synthesis` (no active domain, or a different
+    ///    algorithm).
+    /// 2. Selects the best available AI backend (`ANTHROPIC_API_KEY` env var
+    ///    → direct REST API; `claude` CLI binary → print mode; otherwise error).
+    /// 3. Invokes the backend with a [`SYNTHESIS_TIMEOUT_SECS`]-second timeout.
+    /// 4. On success, stores the textual output via `set_synthesis_result()` and
+    ///    emits a structured `tracing::info!` log with `synthesis_manager_spawned`
+    ///    and `synthesis_output_len` fields.
+    /// 5. On timeout or provider error, returns
+    ///    `Err(SynthesisManagerError::Failed)` — no `unwrap()` anywhere in this
+    ///    path.
+    pub async fn run_synthesis_manager(&mut self) -> Result<(), SynthesisManagerError> {
+        let prompt = match self.synthesis_context() {
+            Some(p) => p,
+            None => return Ok(()),
+        };
+
+        let result = tokio::time::timeout(
+            std::time::Duration::from_secs(SYNTHESIS_TIMEOUT_SECS),
+            run_synthesis_ai_call(&prompt),
+        )
+        .await
+        .map_err(|_| SynthesisManagerError::Failed {
+            message: format!(
+                "Synthesis manager session timed out after {SYNTHESIS_TIMEOUT_SECS}s"
+            ),
+        })?
+        .map_err(|e| SynthesisManagerError::Failed { message: e })?;
+
+        let output_len = result.len();
+        tracing::info!(
+            synthesis_manager_spawned = true,
+            synthesis_output_len = output_len,
+            "Synthesis manager session completed successfully"
+        );
+
+        self.set_synthesis_result(result);
+        Ok(())
+    }
+
+    /// Write the cycle output file per the domain's `OutputFormat` configuration.
+    ///
+    /// Returns the relative output file path when a file was written, or `None`
+    /// for `OutputFormat::PullRequest` (the existing PR flow owns the output).
+    /// The driver should stage the returned path before opening the PR.
+    ///
+    /// When no domain is active, returns `Ok(None)` — all existing behaviour
+    /// is unchanged.
+    pub fn apply_output_format(
+        &self,
+        worktree_path: &std::path::Path,
+    ) -> Result<Option<String>, crate::output_format::OutputFormatError> {
+        let domain = match &self.config.active_domain {
+            Some(d) => d,
+            None => return Ok(None),
+        };
+        crate::output_format::format_cycle_output(
+            &domain.output_format(),
+            &self.worker_outputs,
+            worktree_path,
+        )
+    }
+
+    /// Load and chunk document input based on the active domain's `InputFormat`.
+    ///
+    /// Returns `Vec<String>` of text chunks. An empty `Vec` signals the driver
+    /// to fall back to the default codebase repository-map scan.
+    ///
+    /// When no domain is active or the format is `Codebase`, returns an empty
+    /// `Vec` — all existing behaviour is unchanged.
+    pub fn load_input_document(
+        &self,
+        file_path: Option<&str>,
+        text_input: Option<&str>,
+    ) -> Result<Vec<String>, crate::input_adapter::InputAdapterError> {
+        let domain = match &self.config.active_domain {
+            Some(d) => d,
+            None => return Ok(vec![]),
+        };
+        crate::input_adapter::load_document(&domain.input_format(), file_path, text_input)
+    }
+
+    /// Configure the Living Skill Registry for Phase 28 skill pre-loading.
+    ///
+    /// When called with a valid `db_path` and `project_id`, each call to
+    /// `prepare_worker_prompts()` will attempt to match each task's domain
+    /// using the `SkillMatcher` and prepend a token-budgeted context block
+    /// before `DefaultContextRouter` runs. Requires the `living-skills` feature.
+    #[cfg(feature = "living-skills")]
+    pub fn set_skill_registry(
+        &mut self,
+        db_path: std::path::PathBuf,
+        project_id: uuid::Uuid,
+    ) {
+        self.skill_db_path = Some(db_path);
+        self.skill_project_id = Some(project_id);
     }
 
     /// Configure multi-developer workspace sessions for this cycle.
@@ -515,6 +873,7 @@ impl OrchestrationService {
                         .last_validation_verdict
                         .as_ref()
                         .map(|v| v.to_prompt_summary()),
+                    domain: self.config.active_domain.clone(),
                     ..Default::default()
                 };
                 let prompt = ManagerPromptBuilder::build(&prompt_config);
@@ -578,6 +937,7 @@ impl OrchestrationService {
                         .last_validation_verdict
                         .as_ref()
                         .map(|v| v.to_prompt_summary()),
+                    domain: self.config.active_domain.clone(),
                     ..Default::default()
                 };
                 let prompt = ManagerPromptBuilder::build(&prompt_config);
@@ -702,6 +1062,30 @@ impl OrchestrationService {
             .transition_to(OrchestrationCycleState::AnalyzingManagerResults, &self.i18n)?;
         self.emit(event);
 
+        // Determine domain-level consensus algorithm (opt-in; None = existing behaviour).
+        let domain_algorithm = self
+            .config
+            .active_domain
+            .as_ref()
+            .map(|d| d.consensus_algorithm());
+
+        // When the domain uses Synthesis, workers still execute normally here.
+        // After all workers complete the driver must call
+        // `run_synthesis_manager()` which invokes the AI provider with the
+        // combined worker-output prompt and stores the result for the output
+        // formatter to write (e.g. `legal-analysis.md`).
+        if let Some(ConsensusAlgorithm::Synthesis {
+            ref synthesis_prompt,
+        }) = domain_algorithm
+        {
+            tracing::info!(
+                synthesis_prompt_len = synthesis_prompt.len(),
+                synthesis_timeout_secs = SYNTHESIS_TIMEOUT_SECS,
+                "Synthesis domain configured; driver must call run_synthesis_manager() \
+                 after all workers complete"
+            );
+        }
+
         // Filter to successful proposals only
         let successful: Vec<&ManagerProposal> =
             self.proposals.iter().filter(|p| p.completed).collect();
@@ -709,10 +1093,15 @@ impl OrchestrationService {
         let result = if successful.is_empty() {
             ConsensusResult::no_consensus(self.config.consensus_config.strategy)
         } else {
-            self.consensus_engine.evaluate(
-                &successful.iter().copied().cloned().collect::<Vec<_>>(),
-                &self.i18n,
-            )?
+            let proposals_vec: Vec<ManagerProposal> =
+                successful.iter().copied().cloned().collect();
+            match &domain_algorithm {
+                Some(algo @ ConsensusAlgorithm::Majority { .. }) => {
+                    self.consensus_engine
+                        .evaluate_with_domain_algorithm(&proposals_vec, &self.i18n, Some(algo))?
+                }
+                _ => self.consensus_engine.evaluate(&proposals_vec, &self.i18n)?,
+            }
         };
 
         self.emit(OrchestrationEvent::ConsensusReached {
@@ -1126,6 +1515,75 @@ impl OrchestrationService {
                         .to_string()
                 };
 
+                // Phase 28: prepend skill context when living-skills feature is active
+                // and a registry is configured. Runs BEFORE DefaultContextRouter so the
+                // snapshot occupies the 30% skill budget and leaves 50% for reactive files.
+                #[cfg(feature = "living-skills")]
+                let context_preamble = {
+                    let mut preamble = context_preamble;
+                    if let (Some(db_path), Some(project_id)) =
+                        (&self.skill_db_path, &self.skill_project_id)
+                    {
+                        use mahalaxmi_skills::matching::matcher::SkillMatcher;
+                        use mahalaxmi_skills::matching::injector::SkillContextInjector;
+                        use mahalaxmi_skills::profile::compressor::ContextCompressor;
+                        use mahalaxmi_skills::registry::store::SkillRegistry;
+                        use std::sync::Arc;
+
+                        // Default provider context window for budget calculation (200K for Claude).
+                        const DEFAULT_CONTEXT_WINDOW: u32 = 200_000;
+                        match SkillRegistry::new(db_path) {
+                            Ok(registry) => {
+                                let matcher = SkillMatcher::new(
+                                    Arc::new(registry),
+                                    *project_id,
+                                );
+                                let hint_files: Vec<std::path::PathBuf> = task
+                                    .affected_files
+                                    .iter()
+                                    .map(std::path::PathBuf::from)
+                                    .collect();
+                                match matcher.match_task_sync(&task.description, &hint_files) {
+                                    Ok(Some(m)) => {
+                                        tracing::info!(
+                                            task_id = %task.task_id,
+                                            domain = %m.matched_domain.name,
+                                            confidence = m.confidence,
+                                            token_count = m.profile.token_count,
+                                            "Skill context pre-loaded for worker"
+                                        );
+                                        let injector = SkillContextInjector::new(
+                                            ContextCompressor::new(DEFAULT_CONTEXT_WINDOW),
+                                        );
+                                        let skill_block = injector.inject(&m.profile);
+                                        preamble = format!("{skill_block}\n\n{preamble}");
+                                    }
+                                    Ok(None) => {
+                                        tracing::debug!(
+                                            task_id = %task.task_id,
+                                            "No skill profile matched — using default context"
+                                        );
+                                    }
+                                    Err(e) => {
+                                        tracing::warn!(
+                                            task_id = %task.task_id,
+                                            error = %e,
+                                            "SkillMatcher error — skipping skill injection"
+                                        );
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                tracing::warn!(
+                                    error = %e,
+                                    "Failed to open SkillRegistry — skipping skill injection"
+                                );
+                            }
+                        }
+                    }
+                    preamble
+                };
+
                 // Get retry context if this is a retry
                 let retry_context = queue
                     .get_worker(&task.worker_id)
@@ -1176,6 +1634,7 @@ impl OrchestrationService {
                     context_router_config: Some(router_config),
                     codebase_index: None,    // Phase 5 sets this
                     last_cycle_report: None, // Phase 5 sets this
+                    domain: self.config.active_domain.clone(),
                 };
 
                 let prompt = WorkerPromptBuilder::build(&config);
@@ -1265,6 +1724,25 @@ impl OrchestrationService {
             .or_else(|| Some(self.config.provider_id.clone()))
     }
 
+    /// Update `provider_id` on a queued worker to reflect the provider that
+    /// was actually selected at spawn time (may differ from the plan assignment
+    /// when fallback routing kicks in).
+    ///
+    /// Called from the driver immediately after a provider is resolved so that
+    /// `generate_cycle_report()` and the Dashboard "What was accomplished"
+    /// panel show the correct provider name rather than the planned one.
+    pub fn set_worker_runtime_provider(
+        &mut self,
+        worker_id: &WorkerId,
+        provider_id: ProviderId,
+    ) {
+        if let Some(queue) = self.worker_queue.as_mut() {
+            if let Some(worker) = queue.get_worker_mut(worker_id) {
+                worker.provider_id = Some(provider_id);
+            }
+        }
+    }
+
     // =========================================================================
     // Phase 4: Worker Execution
     // =========================================================================
@@ -1323,6 +1801,33 @@ impl OrchestrationService {
             .unwrap_or(self.config.worker_count)
     }
 
+    /// Returns the worker count mandated by the active domain's decomposition
+    /// strategy when it is `RoleBased`, or `None` for all other strategies.
+    ///
+    /// Used by the driver before `build_manager_prompts()` to override the
+    /// caller-supplied `worker_count` so that `ManagerPromptConfig.worker_count`
+    /// correctly reflects the number of specialist roles.  Returns `None` when
+    /// `active_domain` is absent (e.g. heal cycles that use
+    /// `CycleMetadata::into_cycle_config()` which hardcodes `active_domain: None`).
+    pub fn effective_worker_count_for_domain(&self) -> Option<u32> {
+        match self.config.active_domain.as_ref()?.decomposition_strategy() {
+            mahalaxmi_core::domain::DecompositionStrategy::RoleBased { roles } => {
+                Some(roles.len() as u32)
+            }
+            _ => None,
+        }
+    }
+
+    /// Override the worker count stored in the cycle config.
+    ///
+    /// Called by the driver immediately after
+    /// `effective_worker_count_for_domain()` returns `Some(n)` so that
+    /// `build_manager_prompts()` uses the domain-mandated count rather than
+    /// the caller-supplied value.
+    pub fn set_config_worker_count(&mut self, n: u32) {
+        self.config.worker_count = n;
+    }
+
     /// Get worker IDs ready for dispatch (respecting concurrency limits and dependencies).
     ///
     /// Returns empty if paused.
@@ -1334,6 +1839,16 @@ impl OrchestrationService {
             .as_ref()
             .map(|q| q.ready_worker_ids())
             .unwrap_or_default()
+    }
+
+    /// Get the affected files list for a worker (REQ-003 file scope enforcement).
+    pub fn worker_affected_files(&self, worker_id: &WorkerId) -> Option<Vec<String>> {
+        self.execution_plan.as_ref().and_then(|plan| {
+            plan.all_workers()
+                .into_iter()
+                .find(|t| t.worker_id == *worker_id)
+                .map(|t| t.affected_files.clone())
+        })
     }
 
     /// Get the task description for a worker (the prompt to send to the AI worker).
@@ -1425,6 +1940,48 @@ impl OrchestrationService {
             crate::MahalaxmiError::orchestration(&self.i18n, "error-no-worker-queue", &[])
         })?;
         queue.complete_worker(worker_id, &self.i18n)?;
+
+        self.emit(OrchestrationEvent::WorkerCompleted {
+            cycle_id: self.state_machine.cycle_id(),
+            worker_id,
+            success: true,
+            duration_ms,
+            timestamp: Utc::now(),
+        });
+
+        if self.batch_active_count > 0 {
+            self.batch_active_count -= 1;
+            if self.batch_active_count == 0 {
+                self.emit_batch_complete_signal();
+            }
+        }
+        Ok(())
+    }
+
+    /// Mark a worker as completed, bypassing the verification gate.
+    ///
+    /// Call this instead of `complete_worker` when the worker produced no code
+    /// changes (e.g. "task already done — skipping PR"). Verification requires
+    /// terminal output to analyse; when there is none the worker would otherwise
+    /// stall in `WorkerStatus::Verifying` indefinitely.
+    pub fn force_complete_worker(
+        &mut self,
+        worker_id: WorkerId,
+        duration_ms: u64,
+    ) -> MahalaxmiResult<()> {
+        // Record agent accuracy (treat no-changes as a perfect pass)
+        if let Some(queue) = &self.worker_queue {
+            if let Some(worker) = queue.get_worker(&worker_id) {
+                if let Some(ref spec) = worker.agent_spec {
+                    self.agent_registry.record_result(&spec.id, true, 1.0);
+                }
+            }
+        }
+
+        let queue = self.worker_queue.as_mut().ok_or_else(|| {
+            crate::MahalaxmiError::orchestration(&self.i18n, "error-no-worker-queue", &[])
+        })?;
+        queue.force_complete_worker(worker_id, &self.i18n)?;
 
         self.emit(OrchestrationEvent::WorkerCompleted {
             cycle_id: self.state_machine.cycle_id(),
@@ -2218,6 +2775,23 @@ impl OrchestrationService {
         &self.proposals
     }
 
+    /// Inject pre-built proposals directly into the orchestration service.
+    ///
+    /// Called by the Phase 27 adversarial deliberation path after all domain
+    /// teams have synthesized their final task lists.  Bypasses PTY manager
+    /// terminals entirely — the injected proposals are treated identically to
+    /// proposals produced by `submit_manager_output`.
+    ///
+    /// Replaces any existing proposals.  Must be called while the service is
+    /// in the `CollectingManagerOutput` state (i.e. after `build_manager_prompts`).
+    pub fn inject_proposals(&mut self, proposals: Vec<ManagerProposal>) {
+        self.proposals = proposals;
+        tracing::info!(
+            count = self.proposals.len(),
+            "Adversarial deliberation proposals injected into orchestration service"
+        );
+    }
+
     /// Run consensus on pre-grouped (and optionally arbitrated) task groups.
     ///
     /// Identical to [`run_consensus`] except it skips the initial grouping step
@@ -2412,6 +2986,7 @@ mod tests {
             git_pr_platform: GitPrPlatform::GitHub,
             enable_validation: false,
             validator_provider_id: None,
+            active_domain: None,
         }
     }
 

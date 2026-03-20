@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for memory type system.
 
 use mahalaxmi_memory::types::confidence::ConfidenceLevel;

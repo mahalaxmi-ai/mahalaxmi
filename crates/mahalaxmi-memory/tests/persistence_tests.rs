@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for file-based persistence.
 
 use mahalaxmi_memory::*;

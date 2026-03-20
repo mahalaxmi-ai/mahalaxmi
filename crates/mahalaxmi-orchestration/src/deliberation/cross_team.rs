@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cross-team dependency resolution for adversarial deliberation.
 //!
 //! [`CrossTeamDependencyPass`] performs a single AI call that reviews all
@@ -15,7 +13,7 @@
 //! unavailable.
 
 use crate::deliberation::api_client::{AnthropicApiClient, ChatMessage};
-use crate::deliberation::team::{DeliberationClient, ProposedDeliberationTask, TeamDeliberationLog};
+use crate::deliberation::team::{DeliberationClient, TeamDeliberationLog};
 use crate::models::proposal::{ManagerProposal, ProposedTask};
 use mahalaxmi_core::config::AdversarialDeliberationConfig;
 use mahalaxmi_core::types::ManagerId;
@@ -190,6 +188,7 @@ mod tests {
     use super::*;
     use crate::deliberation::api_client::ChatMessage;
     use crate::deliberation::discovery::DomainArea;
+    use crate::deliberation::team::ProposedDeliberationTask;
     use mahalaxmi_core::error::MahalaxmiError;
     use mahalaxmi_core::MahalaxmiResult;
     use std::collections::VecDeque;
@@ -232,6 +231,7 @@ mod tests {
             domain: DomainArea {
                 name: domain_name.to_owned(),
                 description: format!("{domain_name} domain"),
+                key_files: vec![],
             },
             turns: vec![],
             final_tasks: vec![ProposedDeliberationTask {

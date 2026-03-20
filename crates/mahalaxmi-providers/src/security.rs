@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Automatic sensitive code routing — zero-configuration security classification.
 //!
 //! Tasks are automatically classified as `Normal`, `Sensitive`, or `Restricted`

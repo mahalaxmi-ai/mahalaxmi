@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! File relevance scoring for intelligent context preparation.
 //!
 //! Scores files by their relevance to a worker task using multiple

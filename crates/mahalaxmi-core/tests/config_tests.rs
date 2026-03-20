@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::config::loader::{
     default_config_path, generate_default_config, load_config, validate_config,
 };

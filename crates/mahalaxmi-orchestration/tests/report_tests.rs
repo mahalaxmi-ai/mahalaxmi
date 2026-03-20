@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for the CycleReport model and generation via OrchestrationService.
 
 use chrono::Utc;
@@ -297,6 +295,7 @@ fn test_config() -> CycleConfig {
         git_pr_platform: mahalaxmi_core::types::GitPrPlatform::GitHub,
         enable_validation: false,
         validator_provider_id: None,
+        active_domain: None,
     }
 }
 
@@ -473,6 +472,7 @@ fn manager_prompt_includes_previous_cycle_report_when_present() {
             "Previous cycle completed 2/3 tasks in 5m 30s.\nFailed tasks:\n  - Fix tests".into(),
         ),
         previous_validation_verdict: None,
+            domain: None,
     };
 
     let prompt = ManagerPromptBuilder::build(&config);
@@ -498,6 +498,7 @@ fn manager_prompt_omits_previous_cycle_when_none() {
         include_quality_mandate: true,
         previous_cycle_report: None,
         previous_validation_verdict: None,
+            domain: None,
     };
 
     let prompt = ManagerPromptBuilder::build(&config);

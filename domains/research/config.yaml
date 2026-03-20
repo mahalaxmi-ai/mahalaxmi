@@ -1,0 +1,43 @@
+id: research
+description: >-
+  Multi-agent literature review and research synthesis. Document sections
+  are analyzed in parallel and synthesized into a comprehensive review.
+
+manager_uncapped:
+  file: manager.prompt
+
+manager_capped:
+  file: manager.prompt
+
+worker_system_role:
+  file: worker.prompt
+
+decomposition_strategy:
+  section_based:
+    max_section_tokens: 3000
+    overlap_tokens: 300
+
+consensus_algorithm:
+  synthesis:
+    synthesis_prompt: >-
+      You are a senior researcher. Synthesize the section analyses into a
+      comprehensive literature review covering: main themes, key findings,
+      methodological approaches, contradictions between sources,
+      and research gaps warranting further investigation.
+
+output_format:
+  markdown_file:
+    output_file: research-synthesis.md
+
+input_format:
+  document_file:
+    accepted_types:
+      - pdf
+      - txt
+      - md
+    max_file_size_mb: 50
+
+domain_tags:
+  - research
+  - literature-review
+  - synthesis

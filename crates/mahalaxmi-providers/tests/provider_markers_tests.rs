@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Marker regex validation against realistic terminal output.
 
 use mahalaxmi_providers::tier1;

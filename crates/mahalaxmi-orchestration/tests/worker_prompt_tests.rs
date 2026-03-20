@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for WorkerPromptBuilder.
 
 use mahalaxmi_orchestration::prompt::worker_builder::{WorkerPromptBuilder, WorkerPromptConfig};
@@ -27,6 +25,7 @@ fn base_config() -> WorkerPromptConfig {
         context_router_config: None,
         codebase_index: None,
         last_cycle_report: None,
+        domain: None,
     }
 }
 
@@ -201,17 +200,59 @@ fn prompt_includes_context_preamble() {
 #[test]
 fn prompt_truncates_long_requirements() {
     let mut config = base_config();
-    // Create requirements longer than 4000 chars
-    config.requirements = "A".repeat(5000);
+    // Create requirements longer than MAX_CHARS (32_000) so truncation fires.
+    // Using 35_000 chars ensures we exceed the threshold regardless of
+    // the preamble/window sizes used inside truncate_requirements.
+    config.requirements = "A".repeat(35_000);
     let prompt = WorkerPromptBuilder::build(&config);
     assert!(
-        prompt.contains("Requirements truncated"),
+        prompt.contains("truncated"),
         "Long requirements should be truncated with a note"
     );
-    // The full 5000-char string should NOT appear
+    // The full 35_000-char string should NOT appear verbatim
     assert!(
-        !prompt.contains(&"A".repeat(5000)),
+        !prompt.contains(&"A".repeat(35_000)),
         "Full long requirements should not appear in prompt"
+    );
+}
+
+// ── REQ-001: task-local windowing ─────────────────────────────────────────────
+
+#[test]
+fn req001_window_contains_task_description() {
+    let mut config = base_config();
+    // Requirements are 40_000 chars — well above MAX_CHARS (32_000).
+    // The task description appears at position ~20_000 (inside the file).
+    // After windowing, the task description text must be present in the prompt.
+    let task_description = "Implement the FrobnicateWidget feature";
+    let padding = "B".repeat(20_000);
+    let suffix = "C".repeat(20_000);
+    config.requirements = format!("{padding}{task_description}{suffix}");
+    config.task_description = task_description.to_string();
+
+    let prompt = WorkerPromptBuilder::build(&config);
+    assert!(
+        prompt.contains(task_description),
+        "Windowed prompt must contain the task description text"
+    );
+    assert!(
+        prompt.contains("truncated") || prompt.contains("context around"),
+        "Windowed prompt should mention truncation"
+    );
+}
+
+#[test]
+fn req001_short_requirements_not_truncated() {
+    let mut config = base_config();
+    config.requirements = "Short requirements that fit easily.".to_string();
+    let prompt = WorkerPromptBuilder::build(&config);
+    assert!(
+        prompt.contains("Short requirements that fit easily."),
+        "Short requirements must appear verbatim"
+    );
+    assert!(
+        !prompt.contains("truncated"),
+        "Short requirements should not trigger truncation notice"
     );
 }
 

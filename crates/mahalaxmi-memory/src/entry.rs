@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Memory entry types and builder.
 
 use crate::types::{MemoryId, MemorySource, MemoryType};

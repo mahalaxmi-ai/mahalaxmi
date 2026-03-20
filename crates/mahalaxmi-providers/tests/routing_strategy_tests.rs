@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Section 5: Automatic cost-optimized routing strategies.
 //!
 //! Verifies that RoutingStrategy (QualityFirst, CostOptimized, SpeedFirst) and

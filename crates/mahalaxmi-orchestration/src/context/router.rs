@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Intelligent context routing for worker activation.
 //!
 //! Combines three orthogonal signals — lexical overlap, import-graph proximity,

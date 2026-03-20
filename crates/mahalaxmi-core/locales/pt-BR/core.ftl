@@ -159,7 +159,7 @@ error-license-serialization-failed = Falha ao serializar dados da licença: { $r
 error-license-signing-failed = Falha ao assinar licença: { $reason }
 error-license-feature-denied = O recurso '{ $feature }' não está disponível no plano { $tier }
 error-license-worker-limit = Os { $requested } trabalhadores solicitados excedem o limite de { $limit } do plano { $tier }
-error-license-manager-limit = Os { $requested } gerenciadores solicitados excedem o limite de { $limit } do plano { $tier }
+error-license-manager-limit = Os { $requested } gerenciadores solicitados excedem o limite de { $limit } do plano { $tier }. Ative sua assinatura em Configurações → Licença para desbloquear mais.
 error-license-category-denied = A categoria '{ $category }' requer o plano { $required_tier } (atual: { $tier })
 error-license-fingerprint-hostname = Falha ao determinar o nome do host: { $reason }
 error-license-fingerprint-username = Falha ao determinar o nome de usuário: { $reason }
@@ -398,3 +398,9 @@ worktree-gitignore-write-failed = Failed to write .gitignore: { $detail }
 worktree-gitignore-create-failed = Failed to create .gitignore: { $detail }
 worktree-git-exec-failed = Failed to spawn git command ({ $cmd }): { $detail }
 worktree-git-cmd-failed = git command failed ({ $cmd }): { $detail }
+
+# Autonomous Sprint Completion (WAVE 3)
+error-orchestration-quorum-not-met = Quórum de gerentes não atingido: { $received } de { $expected } propostas recebidas (mínimo: { $min_quorum })
+orchestration-file-conflict-serialized = Tarefa { $later_task } serializada após { $earlier_task } — ambas reivindicam o arquivo '{ $file }'
+orchestration-build-check-failed = Verificação de compilação { $project_type } por trabalhador { $worker_id } falhou
+orchestration-build-check-passed = Verificação de compilação { $project_type } por trabalhador { $worker_id } aprovada

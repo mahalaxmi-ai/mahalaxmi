@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Three-condition circuit breaker for orchestration batch dispatch.
 //!
 //! Evaluated before every batch in all three orchestration modes (Standard,

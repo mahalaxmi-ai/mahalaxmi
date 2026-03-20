@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Worker prompt builder — assembles targeted prompts for individual AI worker agents.
 //!
 //! Each worker receives a focused prompt containing only the context relevant to
@@ -9,6 +7,7 @@
 use std::sync::Arc;
 
 use mahalaxmi_core::config::ContextFormat;
+use mahalaxmi_core::domain::DomainConfig;
 use mahalaxmi_core::types::GitMergeStrategy;
 
 use super::builder::{format_section, resolve_format};
@@ -59,6 +58,9 @@ pub struct WorkerPromptConfig {
     pub codebase_index: Option<Arc<mahalaxmi_indexing::CodebaseIndex>>,
     /// Previous cycle report for historical co-occurrence scoring. None skips the signal.
     pub last_cycle_report: Option<Arc<CycleReport>>,
+    /// Optional domain configuration. When `Some`, the domain's worker system
+    /// role overrides the built-in hardcoded string.
+    pub domain: Option<Arc<dyn DomainConfig>>,
 }
 
 /// Builds targeted, provider-formatted prompts for individual AI worker agents.
@@ -82,8 +84,13 @@ impl WorkerPromptBuilder {
         let format = resolve_format(ContextFormat::Auto, &config.provider_id);
         let mut prompt = String::with_capacity(4096);
 
-        // 1. System role
-        prompt.push_str(&Self::system_role());
+        // 1. System role — prefer domain override, fall back to hardcoded
+        let system_role_text = config
+            .domain
+            .as_ref()
+            .map(|d| d.worker_system_role())
+            .unwrap_or_else(Self::system_role);
+        prompt.push_str(&system_role_text);
         prompt.push_str("\n\n");
 
         // 1a. Agent identity (if specialist persona assigned)
@@ -107,7 +114,7 @@ impl WorkerPromptBuilder {
 
         // 3. Requirements (from activated template)
         if !config.requirements.is_empty() {
-            let req_content = Self::truncate_requirements(&config.requirements);
+            let req_content = Self::truncate_requirements(&config.requirements, &config.task_description);
             prompt.push_str(&format_section(
                 "Project Requirements",
                 "requirements",
@@ -317,12 +324,26 @@ C5: You MUST NOT introduce debug output (println!, console.log, print(),
     fn completion_section(config: &WorkerPromptConfig, format: ContextFormat) -> String {
         let mut content = String::new();
 
+        // BUG-004: Make acceptance criteria a mandatory self-verification gate.
+        // Workers must explicitly test each criterion and report results before
+        // signaling completion — vague pass-through is not accepted.
         if !config.completion_criteria.is_empty() {
-            content.push_str("Verify these criteria before signaling completion:\n");
-            for criterion in &config.completion_criteria {
-                content.push_str(&format!("- {criterion}\n"));
+            content.push_str(
+                "## Self-Verification Gate (REQUIRED)\n\
+                 Before outputting TASK COMPLETE you MUST verify every criterion below.\n\
+                 Run the commands or checks indicated, then output a brief result summary.\n\
+                 Only proceed to TASK COMPLETE if ALL criteria pass.\n\n",
+            );
+            for (i, criterion) in config.completion_criteria.iter().enumerate() {
+                content.push_str(&format!("  [{i}] {criterion}\n"));
             }
-            content.push('\n');
+            content.push_str(
+                "\nOutput format for self-verification:\n\
+                 VERIFICATION:\n\
+                 [0] <criterion text> → PASS / FAIL: <one-line evidence>\n\
+                 ...\n\
+                 If any criterion FAILs, fix the issue and re-verify before completing.\n\n",
+            );
         }
 
         if config.git_strategy != GitMergeStrategy::Disabled {
@@ -333,7 +354,8 @@ C5: You MUST NOT introduce debug output (println!, console.log, print(),
         }
 
         content.push_str(&format!(
-            "When your task is complete, output exactly:\nTASK COMPLETE: {}",
+            "When your task is complete and ALL verification criteria pass, output exactly:\n\
+             TASK COMPLETE: {}",
             config.task_id
         ));
 
@@ -363,19 +385,88 @@ C5: You MUST NOT introduce debug output (println!, console.log, print(),
         }
     }
 
-    /// Truncate requirements if they exceed ~4000 characters.
-    fn truncate_requirements(requirements: &str) -> String {
-        const MAX_CHARS: usize = 4000;
-        if requirements.len() <= MAX_CHARS {
-            requirements.to_string()
-        } else {
-            let truncated = &requirements[..MAX_CHARS];
-            // Find last newline to avoid cutting mid-line
-            let cut_point = truncated.rfind('\n').unwrap_or(MAX_CHARS);
-            format!(
-                "{}\n\n[... Requirements truncated. Full requirements available to the manager — your task scope is described above.]",
-                &requirements[..cut_point]
-            )
+    /// Truncate requirements if they exceed MAX_CHARS.
+    ///
+    /// If the file is within the limit it is injected verbatim.
+    /// If it exceeds the limit the builder injects:
+    ///   - the first 1 000 chars (preamble / header)
+    ///   - a ±2 000-char window around the task description text
+    ///
+    /// This ensures the worker always sees the context directly relevant to
+    /// its assigned task even when the requirements file is large (REQ-001).
+    fn truncate_requirements(requirements: &str, task_description: &str) -> String {
+        const MAX_CHARS: usize = 32_000;
+        const PREAMBLE_CHARS: usize = 1_000;
+        const WINDOW_CHARS: usize = 2_000;
+
+        let total_chars = requirements.len();
+
+        if total_chars <= MAX_CHARS {
+            tracing::debug!(
+                injected_chars = total_chars,
+                total_chars = total_chars,
+                truncated = false,
+                "Worker requirements: full file injected"
+            );
+            return requirements.to_string();
         }
+
+        // Try to find the task description in the requirements file so we can
+        // build a context window centred on the worker's specific task.
+        let preamble = &requirements[..requirements.len().min(PREAMBLE_CHARS)];
+        let search_key = task_description.get(..50.min(task_description.len())).unwrap_or("");
+
+        let windowed = if !search_key.is_empty() {
+            if let Some(task_pos) = requirements.find(search_key) {
+                let start = task_pos.saturating_sub(WINDOW_CHARS);
+                // Clamp to a char boundary
+                let start = requirements
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .rfind(|&i| i <= start)
+                    .unwrap_or(0);
+                let end = (task_pos + WINDOW_CHARS).min(requirements.len());
+                let end = requirements
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .rfind(|&i| i <= end)
+                    .unwrap_or(requirements.len());
+                let window = &requirements[start..end];
+                format!(
+                    "{preamble}\n[... requirements truncated — showing context around your task ...]\n{window}"
+                )
+            } else {
+                // Task description not found — fall back to first MAX_CHARS
+                let cut = requirements
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .rfind(|&i| i <= MAX_CHARS)
+                    .unwrap_or(MAX_CHARS.min(requirements.len()));
+                format!(
+                    "{}\n[... truncated at {} chars — full requirements available to manager ...]",
+                    &requirements[..cut],
+                    total_chars
+                )
+            }
+        } else {
+            let cut = MAX_CHARS.min(requirements.len());
+            format!(
+                "{}\n[... truncated at {} chars — full requirements available to manager ...]",
+                &requirements[..cut],
+                total_chars
+            )
+        };
+
+        let injected_chars = windowed.len();
+        tracing::info!(
+            injected_chars,
+            total_chars,
+            truncated = true,
+            "Worker requirements: TRUNCATED — {} of {} chars injected",
+            injected_chars,
+            total_chars
+        );
+
+        windowed
     }
 }

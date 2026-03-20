@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Re-exports of developer types from the root developer module.
 //!
 //! All developer types are defined in [`crate::developer`]. This module

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Test runner output parsers.
 //!
 //! Extracts structured [`TestResult`] data from the terminal output of

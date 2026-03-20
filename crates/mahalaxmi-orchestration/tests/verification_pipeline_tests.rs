@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::sync::Arc;
 
 use mahalaxmi_core::config::VerificationConfig;
@@ -137,6 +135,9 @@ fn pipeline_not_enabled_when_disabled() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
     assert!(!pipeline.is_enabled());
@@ -151,6 +152,9 @@ fn pipeline_not_enabled_when_no_checks() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
     assert!(!pipeline.is_enabled());
@@ -165,6 +169,9 @@ fn pipeline_enabled_with_checks() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
     assert!(pipeline.is_enabled());
@@ -179,6 +186,9 @@ fn pipeline_run_skipped_when_disabled() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
     let result = pipeline.run("some output");
@@ -196,6 +206,9 @@ fn pipeline_run_with_no_test_output() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
     let result = pipeline.run("hello world, this has no test output");
@@ -215,6 +228,9 @@ fn pipeline_run_with_passing_cargo_test() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
 
@@ -249,6 +265,9 @@ fn pipeline_run_with_failing_cargo_test() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let pipeline = test_pipeline(config);
 

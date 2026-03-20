@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Section 4: Smart Provider Defaults — verify that built-in providers
 //! have meaningful capability profiles for intelligent routing.
 //!

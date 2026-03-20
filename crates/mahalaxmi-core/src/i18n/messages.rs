@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Internationalization message key constants.
 //!
 //! All user-facing strings in Mahalaxmi are referenced by these keys.
@@ -194,6 +192,14 @@ pub mod keys {
         pub const CYCLE_COMPLETED: &str = "orchestration-cycle-completed";
         /// Worker retrying. Args: worker_id, attempt, max
         pub const WORKER_RETRYING: &str = "orchestration-worker-retrying";
+        /// Manager quorum not met. Args: received, expected, min_quorum
+        pub const QUORUM_NOT_MET: &str = "error-orchestration-quorum-not-met";
+        /// File conflict serialization edge added. Args: later_task, earlier_task, file
+        pub const FILE_CONFLICT_SERIALIZED: &str = "orchestration-file-conflict-serialized";
+        /// Per-worker build check failed. Args: worker_id, project_type
+        pub const BUILD_CHECK_FAILED: &str = "orchestration-build-check-failed";
+        /// Per-worker build check passed. Args: worker_id, project_type
+        pub const BUILD_CHECK_PASSED: &str = "orchestration-build-check-passed";
     }
 
     /// Detection engine message keys.
@@ -697,6 +703,10 @@ mod tests {
             keys::orchestration::WORKER_FAILED,
             keys::orchestration::CYCLE_COMPLETED,
             keys::orchestration::WORKER_RETRYING,
+            keys::orchestration::QUORUM_NOT_MET,
+            keys::orchestration::FILE_CONFLICT_SERIALIZED,
+            keys::orchestration::BUILD_CHECK_FAILED,
+            keys::orchestration::BUILD_CHECK_PASSED,
         ];
         for key in &orchestration_keys {
             assert!(
@@ -879,6 +889,10 @@ mod tests {
             keys::orchestration::WORKER_FAILED,
             keys::orchestration::CYCLE_COMPLETED,
             keys::orchestration::WORKER_RETRYING,
+            keys::orchestration::QUORUM_NOT_MET,
+            keys::orchestration::FILE_CONFLICT_SERIALIZED,
+            keys::orchestration::BUILD_CHECK_FAILED,
+            keys::orchestration::BUILD_CHECK_PASSED,
             // Detection keys
             keys::detection::RULE_COMPILE_FAILED,
             keys::detection::NO_RULES_LOADED,

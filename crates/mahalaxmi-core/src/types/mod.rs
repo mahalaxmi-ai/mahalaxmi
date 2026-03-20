@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Shared domain types used across Mahalaxmi crates.
 
 mod detection;

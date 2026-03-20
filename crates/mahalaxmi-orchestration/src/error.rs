@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Orchestration-specific error types for plan approval and context routing.
 //!
 //! `OrchestrationError` is a lightweight, thiserror-derived error enum used by

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Symbol extraction trait and Tree-sitter based implementation.
 //!
 //! The [`SymbolExtractor`] trait defines the interface for extracting symbol

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 03: Manager Prompt Builder and Output Parser.
 
 use mahalaxmi_core::config::ContextFormat;
@@ -530,6 +528,7 @@ fn default_worker_config() -> WorkerPromptConfig {
         context_router_config: None,
         codebase_index: None,
         last_cycle_report: None,
+        domain: None,
     }
 }
 

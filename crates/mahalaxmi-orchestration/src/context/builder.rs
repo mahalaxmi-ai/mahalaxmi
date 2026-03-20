@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Context builder — assembles the final context preamble for a worker.
 //!
 //! Combines repo map, relevant file chunks, shared memory entries, and

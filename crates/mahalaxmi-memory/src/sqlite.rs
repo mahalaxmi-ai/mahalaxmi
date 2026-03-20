@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! SQLite-backed memory persistence for cross-session organisational memory.
 //!
 //! All types in this module are gated behind the `sqlite` feature flag. Enable

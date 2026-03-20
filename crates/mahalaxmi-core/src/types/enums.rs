@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use serde::{Deserialize, Serialize};
 
 /// Role of a terminal in the orchestration system.

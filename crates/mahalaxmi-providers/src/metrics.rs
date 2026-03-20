@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Provider performance metrics — latency, cost, and success rate tracking.
 //!
 //! The `PerformanceTracker` collects per-provider metrics for routing decisions,

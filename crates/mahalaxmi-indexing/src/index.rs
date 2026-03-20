@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Codebase index with full build and incremental update support.
 //!
 //! The `CodebaseIndex` ties together symbol extraction, dependency graphs,

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Worker result models for the orchestration engine.
 //!
 //! Tracks the outcome of a worker execution including token usage

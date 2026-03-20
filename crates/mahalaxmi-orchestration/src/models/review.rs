@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cross-provider review chain — types for post-completion code review.
 //!
 //! After a worker completes its task, the review chain optionally routes

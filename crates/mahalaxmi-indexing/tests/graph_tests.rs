@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Integration tests for the file dependency graph.
 //!
 //! Covers import resolution for all supported languages, graph construction

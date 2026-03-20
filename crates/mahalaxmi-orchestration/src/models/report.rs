@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cycle report — structured summary of a completed orchestration cycle.
 //!
 //! Generated at cycle completion, the report captures what was done, what

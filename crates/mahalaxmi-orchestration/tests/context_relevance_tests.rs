@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::path::PathBuf;
 
 use mahalaxmi_core::types::{TaskId, WorkerId};

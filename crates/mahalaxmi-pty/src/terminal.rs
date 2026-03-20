@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::error::MahalaxmiError;
 use mahalaxmi_core::i18n::messages::keys;
 use mahalaxmi_core::i18n::I18nService;
@@ -231,6 +229,15 @@ impl ManagedTerminal {
             );
         }
         Ok(status.map(|s| if s.success() { 0 } else { 1 }))
+    }
+
+    /// Return the OS process ID of the PTY child process, if available.
+    ///
+    /// Used by the build infrastructure stall detection to distinguish a
+    /// legitimately busy compiler (active compiler child processes) from a
+    /// genuinely stuck agent process.
+    pub fn child_pid(&mut self) -> Option<u32> {
+        self.child.process_id()
     }
 
     /// Kill the child process.

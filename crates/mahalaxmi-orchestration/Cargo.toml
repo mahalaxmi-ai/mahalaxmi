@@ -23,11 +23,17 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 regex = { workspace = true }
 sha2 = { workspace = true }
+pdf-extract = { version = "0.10", optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
 mockito = "1"
+toml = { workspace = true }
 
 [features]
-default = ["context"]
+default = ["context", "document-input"]
 context = ["dep:mahalaxmi-memory", "dep:mahalaxmi-indexing"]
+document-input = ["dep:pdf-extract"]
+# living-skills feature is a stub in the OSS build; the mahalaxmi-skills crate
+# is a proprietary add-on available in the commercial distribution.
+living-skills = []

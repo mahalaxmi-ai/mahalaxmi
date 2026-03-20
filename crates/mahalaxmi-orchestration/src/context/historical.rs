@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Historical co-occurrence context scoring for context routing.
 //!
 //! Scores files by their co-occurrence with semantically similar tasks in the

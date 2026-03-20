@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Trait definition for memory persistence backends.
 
 use crate::store::MemoryStore;

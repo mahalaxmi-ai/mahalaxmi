@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 /// Scan a batch's combined diff output for error patterns.
 ///
 /// Returns `true` if any error patterns are detected in added lines,

@@ -159,7 +159,7 @@ error-license-serialization-failed = Serialisierung der Lizenzdaten fehlgeschlag
 error-license-signing-failed = Signierung der Lizenz fehlgeschlagen: { $reason }
 error-license-feature-denied = Die Funktion '{ $feature }' ist im Tarif { $tier } nicht verfügbar
 error-license-worker-limit = Die angeforderten { $requested } Worker überschreiten das Limit von { $limit } im Tarif { $tier }
-error-license-manager-limit = Die angeforderten { $requested } Manager überschreiten das Limit von { $limit } im Tarif { $tier }
+error-license-manager-limit = Die angeforderten { $requested } Manager überschreiten das Limit von { $limit } im Tarif { $tier }. Aktivieren Sie Ihr Abonnement unter Einstellungen → Lizenz, um mehr freizuschalten.
 error-license-category-denied = Die Kategorie '{ $category }' erfordert den Tarif { $required_tier } (aktuell: { $tier })
 error-license-fingerprint-hostname = Hostname konnte nicht ermittelt werden: { $reason }
 error-license-fingerprint-username = Benutzername konnte nicht ermittelt werden: { $reason }
@@ -398,3 +398,9 @@ worktree-gitignore-write-failed = Failed to write .gitignore: { $detail }
 worktree-gitignore-create-failed = Failed to create .gitignore: { $detail }
 worktree-git-exec-failed = Failed to spawn git command ({ $cmd }): { $detail }
 worktree-git-cmd-failed = git command failed ({ $cmd }): { $detail }
+
+# Autonomous Sprint Completion (WAVE 3)
+error-orchestration-quorum-not-met = Manager-Quorum nicht erreicht: { $received } von { $expected } Vorschlägen empfangen (Minimum: { $min_quorum })
+orchestration-file-conflict-serialized = Aufgabe { $later_task } nach { $earlier_task } serialisiert — beide beanspruchen Datei '{ $file }'
+orchestration-build-check-failed = Per-Worker { $project_type }-Build-Prüfung für Worker { $worker_id } fehlgeschlagen
+orchestration-build-check-passed = Per-Worker { $project_type }-Build-Prüfung für Worker { $worker_id } bestanden

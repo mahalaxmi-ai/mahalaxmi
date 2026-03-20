@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::sync::Arc;
 
 use mahalaxmi_core::config::VerificationConfig;
@@ -49,6 +47,9 @@ fn verification_config_enabled() -> VerificationConfig {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     }
 }
 
@@ -229,6 +230,9 @@ fn verify_worker_fails_no_retries_left() {
         fail_fast: true,
         auto_fix: true,
         timeout_seconds: 300,
+        parse_verification_failures: true,
+        require_verification_output: false,
+        run_build_check_per_worker: false,
     };
     let plan = build_plan(&[&[(1, 1, &[])]]);
     let mut queue = WorkerQueue::from_plan_with_verification(&plan, 5, 3, config.clone());

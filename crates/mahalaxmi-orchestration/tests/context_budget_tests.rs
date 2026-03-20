@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::config::{BudgetAllocations, ContextConfig};
 use mahalaxmi_orchestration::context::{estimate_tokens, TokenBudget, TokenUsage};
 use mahalaxmi_providers::types::ProviderCapabilities;

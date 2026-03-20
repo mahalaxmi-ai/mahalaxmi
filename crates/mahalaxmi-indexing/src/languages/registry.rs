@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Language registry for managing Tree-sitter grammars and query patterns.
 //!
 //! The [`LanguageRegistry`] stores [`LanguageConfig`] entries keyed by

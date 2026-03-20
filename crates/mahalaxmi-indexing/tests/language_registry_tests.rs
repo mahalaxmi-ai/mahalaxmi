@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Integration tests for the language registry.
 //!
 //! Validates that the default [`LanguageRegistry`] contains configurations for

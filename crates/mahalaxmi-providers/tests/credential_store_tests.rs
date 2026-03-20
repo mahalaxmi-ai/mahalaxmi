@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Credential Security — CredentialStore trait and backends.
 
 use mahalaxmi_providers::credential_store::{

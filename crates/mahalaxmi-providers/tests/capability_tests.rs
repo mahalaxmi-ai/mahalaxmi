@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 09: Extended Provider Capabilities — TaskType, CostTier, Proficiency.
 
 use mahalaxmi_providers::types::{CostTier, Proficiency, ProviderCapabilities, TaskType};

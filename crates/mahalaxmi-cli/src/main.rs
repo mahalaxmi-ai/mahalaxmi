@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Mahalaxmi AI Orchestration — command-line interface.
 //!
 //! Communicates with a running `mahalaxmi-service` instance via its REST API.

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Internationalization (i18n) infrastructure for Mahalaxmi.
 //!
 //! Every user-facing string in the system goes through this module.

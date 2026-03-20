@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for streaming_args() and extract_response() across all providers.
 
 use std::path::Path;

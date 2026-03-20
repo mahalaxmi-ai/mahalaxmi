@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Manager prompt building and output parsing.
 //!
 //! This module provides two key components for the manager session lifecycle:

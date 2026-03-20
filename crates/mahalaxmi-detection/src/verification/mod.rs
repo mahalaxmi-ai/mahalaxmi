@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Worker self-verification output parsers.
 //!
 //! Parsers for extracting structured results from test runner and

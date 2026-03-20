@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Background memory decay task.
 //!
 //! Provides a configurable sweep that archives stale memory entries based on

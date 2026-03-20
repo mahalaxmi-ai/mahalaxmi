@@ -1,0 +1,52 @@
+id: security
+description: >-
+  Multi-agent security analysis. Four specialist analysts examine different
+  threat categories in parallel. Manager synthesizes into a unified report.
+
+manager_uncapped:
+  file: manager.prompt
+
+manager_capped:
+  file: manager.prompt
+
+worker_system_role:
+  file: worker.prompt
+
+decomposition_strategy:
+  role_based:
+    roles:
+      - vulnerability_analyst
+      - dependency_auditor
+      - secrets_scanner
+      - authentication_reviewer
+
+consensus_algorithm:
+  synthesis:
+    synthesis_prompt: >-
+      You are a senior security architect. Synthesize findings from four
+      specialist analysts into a unified security report with: executive
+      summary, findings by severity (Critical/High/Medium/Low), recommended
+      remediation order, estimated effort per finding group.
+
+output_format:
+  structured_report:
+    sections:
+      - Executive Summary
+      - Critical Findings
+      - High Findings
+      - Medium Findings
+      - Low Findings
+      - Remediation Priority
+      - Estimated Effort
+    output_file: security-report.md
+
+input_format: codebase
+
+domain_tags:
+  - security
+  - devsecops
+
+constraint_sections:
+  - name: Analysis Standards
+    source:
+      file: constraints/analysis_standards.prompt

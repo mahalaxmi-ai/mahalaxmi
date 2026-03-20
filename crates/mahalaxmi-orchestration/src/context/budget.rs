@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Token budget allocation and tracking for context preparation.
 //!
 //! Divides the available context window into sections (repo map, files,

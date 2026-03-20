@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! User-facing error messages — translates internal errors into actionable guidance.
 //!
 //! When something goes wrong, users should see messages that:

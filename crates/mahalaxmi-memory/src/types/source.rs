@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Memory entry source attribution.
 
 use serde::{Deserialize, Serialize};

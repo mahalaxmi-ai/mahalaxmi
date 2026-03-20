@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! AI provider abstraction layer for Mahalaxmi.
 //!
 //! Defines the `AiProvider` trait and implementations for multiple AI CLI tools

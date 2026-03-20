@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Structured logging infrastructure for Mahalaxmi.
 //!
 //! Provides dual-output logging: human-readable console output for development

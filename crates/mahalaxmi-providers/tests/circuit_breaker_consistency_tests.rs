@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Section 9: CircuitBreaker state consistency.
 //!
 //! Verifies that the Cell-based interior mutability fix ensures the internal

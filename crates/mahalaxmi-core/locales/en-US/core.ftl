@@ -159,7 +159,7 @@ error-license-serialization-failed = Failed to serialize license data: { $reason
 error-license-signing-failed = Failed to sign license: { $reason }
 error-license-feature-denied = Feature '{ $feature }' is not available on the { $tier } tier
 error-license-worker-limit = Requested { $requested } workers exceeds the { $tier } tier limit of { $limit }
-error-license-manager-limit = Requested { $requested } managers exceeds the { $tier } tier limit of { $limit }
+error-license-manager-limit = Requested { $requested } managers exceeds the { $tier } tier limit of { $limit }. Activate your subscription in Settings → License to unlock more.
 error-license-category-denied = Category '{ $category }' requires { $required_tier } tier (current: { $tier })
 error-license-fingerprint-hostname = Failed to determine hostname: { $reason }
 error-license-fingerprint-username = Failed to determine username: { $reason }
@@ -398,3 +398,9 @@ worktree-gitignore-write-failed = Failed to write .gitignore: { $detail }
 worktree-gitignore-create-failed = Failed to create .gitignore: { $detail }
 worktree-git-exec-failed = Failed to spawn git command ({ $cmd }): { $detail }
 worktree-git-cmd-failed = git command failed ({ $cmd }): { $detail }
+
+# Autonomous Sprint Completion (WAVE 3)
+error-orchestration-quorum-not-met = Manager quorum not met: { $received } of { $expected } proposals received (minimum: { $min_quorum })
+orchestration-file-conflict-serialized = Task { $later_task } serialized after { $earlier_task } — both claim file '{ $file }'
+orchestration-build-check-failed = Per-worker { $project_type } build check failed for worker { $worker_id }
+orchestration-build-check-passed = Per-worker { $project_type } build check passed for worker { $worker_id }

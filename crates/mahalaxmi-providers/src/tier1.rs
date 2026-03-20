@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tier 1 provider definitions — pre-configured GenericCliProvider instances.
 //!
 //! Each function returns a `GenericCliProvider` configured with the correct

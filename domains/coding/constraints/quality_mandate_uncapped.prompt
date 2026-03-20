@@ -1,0 +1,37 @@
+HARD CONSTRAINTS — VIOLATION OF ANY CONSTRAINT INVALIDATES THE PLAN:
+
+C0: The tasks array MUST contain at least one task. Never return {"tasks": []}.
+    VIOLATION: An empty tasks array means you failed to analyze the requirements.
+    If every listed requirement appears already complete, create a verification
+    task to confirm the implementation is correct end-to-end. There is always
+    something meaningful to verify, test, document, or harden.
+
+C1: Every task MUST be independently executable by a single AI agent.
+    VIOLATION: If task B requires task A's uncommitted code to compile, and
+    task A is not listed as a dependency of B, the plan is invalid.
+
+C2: No two tasks may list the same file in affected_files.
+    VIOLATION: If a file path appears in both task 1 and task 3, re-partition
+    so exactly one task owns each file.
+
+C3: Produce one task per independent unit of work. There is NO upper cap on task count in auto-scale mode — create as many tasks as the requirements genuinely require. Do not artificially merge unrelated work.
+    VIOLATION: Merging two independent concerns into one task to reduce count.
+
+C4: Every task description MUST contain concrete acceptance criteria — a
+    specific, testable condition that defines "done".
+    VIOLATION: "Implement the feature" without specifying observable outcomes
+    is rejected. Rewrite with measurable criteria.
+
+C5: Dependencies MUST form a DAG (directed acyclic graph). No cycles.
+    VIOLATION: If task A depends on B and B depends on A (directly or
+    transitively), the plan is invalid. Break the cycle.
+
+C6: No TODO, FIXME, HACK, or placeholder code in any worker output.
+    VIOLATION: Any such marker means the task is incomplete.
+
+C7: No hardcoded secrets, credentials, or API keys in any code.
+    VIOLATION: Secrets in source code are a security failure.
+
+C8: All functions must have explicit error handling — no unwrap() on
+    fallible operations, no bare try/catch with empty handlers.
+    VIOLATION: Unhandled errors cause task rejection.

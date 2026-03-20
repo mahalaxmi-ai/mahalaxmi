@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for post-cycle requirement validation (Phase 4 — P2–P5).
 
 use mahalaxmi_core::config::ContextFormat;

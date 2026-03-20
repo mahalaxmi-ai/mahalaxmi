@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use crate::consensus::normalizer::{group_matching_tasks, TaskGroup};
 use crate::models::{ConsensusConfiguration, ConsensusResult, ManagerProposal};
 use mahalaxmi_core::i18n::I18nService;

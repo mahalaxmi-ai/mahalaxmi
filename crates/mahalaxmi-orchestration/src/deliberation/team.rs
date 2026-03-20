@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Adversarial Manager Team: three-turn Proposer/Challenger/Synthesizer deliberation.
 //!
 //! [`AdversarialManagerTeam`] orchestrates three sequential API calls per domain
@@ -11,7 +9,7 @@
 
 use crate::deliberation::api_client::{AnthropicApiClient, ChatMessage};
 use crate::deliberation::discovery::DomainArea;
-use crate::deliberation::gate::AdversarialDeliberationConfig;
+use mahalaxmi_core::config::AdversarialDeliberationConfig;
 use mahalaxmi_core::error::MahalaxmiError;
 use mahalaxmi_core::MahalaxmiResult;
 
@@ -283,6 +281,7 @@ mod tests {
         DomainArea {
             name: "Authentication".to_owned(),
             description: "User authentication and session management".to_owned(),
+            key_files: vec!["src/auth.rs".to_owned()],
         }
     }
 
@@ -291,6 +290,7 @@ mod tests {
             proposer_model: "claude-haiku-4-5-20251001".to_owned(),
             synthesizer_model: "claude-sonnet-4-6".to_owned(),
             enabled: true,
+            ..Default::default()
         }
     }
 

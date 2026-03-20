@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use serde::{Deserialize, Serialize};
 
 /// Configuration for a PTY terminal instance.
@@ -19,9 +17,9 @@ pub struct TerminalConfig {
     /// always emitted regardless of this setting. Default: false.
     pub verbose_logging: bool,
     /// Maximum size in bytes for the raw PTY replay ring buffer.
-    /// Default: 512 KB. Orchestration terminals that process large AI responses
-    /// (e.g., Claude Code stream-json) should use a larger value (e.g., 2 MB)
-    /// to avoid losing data needed for `extract_response()` parsing.
+    /// Default: 2 MB. The 2 MB cap accommodates large AI provider stream-json
+    /// responses while still bounding memory per terminal. A `tracing::warn!`
+    /// is emitted when the buffer crosses 75% capacity.
     pub raw_replay_capacity_bytes: u32,
 }
 
@@ -33,7 +31,7 @@ impl Default for TerminalConfig {
             scrollback_lines: 10_000,
             enable_logging: false,
             verbose_logging: false,
-            raw_replay_capacity_bytes: 512 * 1024,
+            raw_replay_capacity_bytes: 2 * 1024 * 1024,
         }
     }
 }

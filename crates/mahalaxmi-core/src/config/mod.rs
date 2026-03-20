@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 pub mod loader;
 
 use serde::{Deserialize, Serialize};
@@ -54,6 +52,8 @@ pub struct RawMahalaxmiConfig {
     pub orchestration: RawOrchestrationConfig,
     #[serde(default)]
     pub deliberation: AdversarialDeliberationConfig,
+    #[serde(default)]
+    pub git: RawGitConfig,
 }
 
 /// Global application configuration for AI providers (runtime, decrypted).
@@ -84,6 +84,7 @@ pub struct MahalaxmiConfig {
     pub mcp: McpConfig,
     pub memory: MemoryConfig,
     pub deliberation: AdversarialDeliberationConfig,
+    pub git: GitConfig,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -208,6 +209,11 @@ pub struct LicensingConfig {
     pub message_poll_interval_seconds: u64,
     pub cache_file: PathBuf,
     pub platform_api_url: Option<String>,
+    /// Whether offline validation (cache fallback) is permitted.
+    /// Set from the embedded PAK's `offlineValidationEnabled` claim.
+    /// Defaults to `true` to preserve compatibility with non-PAK deployments.
+    #[serde(default = "default_true")]
+    pub offline_validation_enabled: bool,
 }
 
 impl Default for LicensingConfig {
@@ -229,6 +235,7 @@ impl Default for LicensingConfig {
                 .join(".mahalaxmi")
                 .join("license_cache.bin"),
             platform_api_url: None,
+            offline_validation_enabled: true,
         }
     }
 }
@@ -384,6 +391,18 @@ pub struct RawVerificationConfig {
     pub fail_fast: bool,
     #[serde(default = "default_verification_timeout")]
     pub timeout_seconds: u64,
+    /// Parse VERIFICATION: → FAIL lines from worker output and block completion.
+    /// Default: true — safe change, only fires when workers explicitly output FAIL.
+    #[serde(default = "default_true")]
+    pub parse_verification_failures: bool,
+    /// Require at least one VERIFICATION: line before TASK COMPLETE is accepted.
+    /// Default: false — preserves existing behavior for workers that don't emit lines.
+    #[serde(default)]
+    pub require_verification_output: bool,
+    /// Run a per-worker build check (TypeScript/Rust/Python) after commit and before PR (REQ-006).
+    /// Default: false — opt-in to avoid breaking existing workflows.
+    #[serde(default)]
+    pub run_build_check_per_worker: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -394,6 +413,12 @@ pub struct VerificationConfig {
     pub max_retries: u32,
     pub fail_fast: bool,
     pub timeout_seconds: u64,
+    /// When true, VERIFICATION: → FAIL lines block worker completion (REQ-002).
+    pub parse_verification_failures: bool,
+    /// When true, workers without any VERIFICATION: lines are re-queued (REQ-002).
+    pub require_verification_output: bool,
+    /// When true, runs a per-worker build check (TypeScript/Rust/Python) (REQ-006).
+    pub run_build_check_per_worker: bool,
 }
 
 impl Default for VerificationConfig {
@@ -405,6 +430,9 @@ impl Default for VerificationConfig {
             max_retries: default_max_retries(),
             fail_fast: false,
             timeout_seconds: default_verification_timeout(),
+            parse_verification_failures: true,
+            require_verification_output: false,
+            run_build_check_per_worker: false,
         }
     }
 }
@@ -953,6 +981,7 @@ impl MahalaxmiConfig {
                         .join("license_cache.bin")
                 }),
                 platform_api_url: raw.licensing.platform_api_url,
+                offline_validation_enabled: true,
             },
             indexing: IndexingConfig {
                 excluded_dirs: raw.indexing.excluded_dirs,
@@ -975,6 +1004,9 @@ impl MahalaxmiConfig {
                 max_retries: raw.verification.max_retries,
                 fail_fast: raw.verification.fail_fast,
                 timeout_seconds: raw.verification.timeout_seconds,
+                parse_verification_failures: raw.verification.parse_verification_failures,
+                require_verification_output: raw.verification.require_verification_output,
+                run_build_check_per_worker: raw.verification.run_build_check_per_worker,
             },
             gemini: GeminiConfig::from_raw(raw.gemini, encryption_key),
             claude: ClaudeConfig::from_raw(raw.claude, encryption_key),
@@ -1004,6 +1036,7 @@ impl MahalaxmiConfig {
             mcp: McpConfig::default(),
             memory: MemoryConfig::default(),
             deliberation: raw.deliberation,
+            git: GitConfig::from_raw(raw.git),
         }
     }
 
@@ -1124,6 +1157,24 @@ pub struct RawOrchestrationConfig {
     /// Minimum consecutive identical-state observations before stall is declared.
     #[serde(default = "default_stall_detection_threshold")]
     pub stall_detection_threshold: usize,
+    /// Minimum number of manager proposals required before consensus runs (REQ-008).
+    /// Default: 1 — preserves existing behavior (any single proposal proceeds).
+    /// Set to 2 for majority quorum, or match manager_count for unanimity.
+    #[serde(default = "default_min_manager_quorum")]
+    pub min_manager_quorum: u32,
+    /// Hard timeout (seconds) for all manager agents combined (REQ-007).
+    /// When this wall-clock deadline elapses, remaining managers are aborted and
+    /// consensus runs with whatever proposals arrived. Default: 600 s (10 min).
+    #[serde(default = "default_manager_hard_timeout")]
+    pub manager_hard_timeout_seconds: u64,
+}
+
+fn default_min_manager_quorum() -> u32 {
+    1
+}
+
+fn default_manager_hard_timeout() -> u64 {
+    600
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1155,6 +1206,10 @@ pub struct OrchestrationConfig {
     pub max_total_batches: usize,
     /// Minimum consecutive identical-state observations before stall is declared.
     pub stall_detection_threshold: usize,
+    /// Minimum number of manager proposals required before consensus runs (REQ-008).
+    pub min_manager_quorum: u32,
+    /// Hard timeout (seconds) for all manager agents combined (REQ-007).
+    pub manager_hard_timeout_seconds: u64,
 }
 
 impl OrchestrationConfig {
@@ -1206,6 +1261,8 @@ impl Default for OrchestrationConfig {
             max_batch_retries: default_max_batch_retries(),
             max_total_batches: default_max_total_batches(),
             stall_detection_threshold: default_stall_detection_threshold(),
+            min_manager_quorum: default_min_manager_quorum(),
+            manager_hard_timeout_seconds: default_manager_hard_timeout(),
         }
     }
 }
@@ -1247,6 +1304,47 @@ fn default_stall_detection_threshold() -> usize {
     2
 }
 
+fn default_sequential_merge_threshold() -> u32 {
+    2
+}
+
+/// Git-specific global configuration (raw, from TOML).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RawGitConfig {
+    /// When true, Mahalaxmi falls back to sequential PR merging after
+    /// `sequential_merge_threshold` auto-merge failures in a single cycle.
+    #[serde(default)]
+    pub sequential_merge_fallback: bool,
+    /// Number of auto-merge failures before sequential fallback activates.
+    #[serde(default = "default_sequential_merge_threshold")]
+    pub sequential_merge_threshold: u32,
+}
+
+/// Git-specific global configuration (runtime).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GitConfig {
+    pub sequential_merge_fallback: bool,
+    pub sequential_merge_threshold: u32,
+}
+
+impl Default for GitConfig {
+    fn default() -> Self {
+        Self {
+            sequential_merge_fallback: false,
+            sequential_merge_threshold: default_sequential_merge_threshold(),
+        }
+    }
+}
+
+impl GitConfig {
+    pub fn from_raw(raw: RawGitConfig) -> Self {
+        Self {
+            sequential_merge_fallback: raw.sequential_merge_fallback,
+            sequential_merge_threshold: raw.sequential_merge_threshold,
+        }
+    }
+}
+
 impl OrchestrationConfig {
     pub fn from_raw(raw: RawOrchestrationConfig, encryption_key: Option<&[u8]>) -> Self {
         Self {
@@ -1273,6 +1371,8 @@ impl OrchestrationConfig {
             max_batch_retries: raw.max_batch_retries,
             max_total_batches: raw.max_total_batches,
             stall_detection_threshold: raw.stall_detection_threshold,
+            min_manager_quorum: raw.min_manager_quorum,
+            manager_hard_timeout_seconds: raw.manager_hard_timeout_seconds,
         }
     }
 }
@@ -1863,6 +1963,12 @@ pub struct AdversarialDeliberationConfig {
     pub synthesizer_model: String,
     /// Anthropic model used for domain discovery and the cross-team dependency pass.
     pub discovery_model: String,
+    /// Whether to run the cross-team dependency pass after all domain teams complete.
+    ///
+    /// When `true`, a single Haiku-class API call reviews all teams' proposals
+    /// for conflicts, seam gaps, and missing dependencies.  Gracefully degrades
+    /// on API failure.
+    pub cross_team_pass: bool,
 }
 
 impl Default for AdversarialDeliberationConfig {
@@ -1874,6 +1980,7 @@ impl Default for AdversarialDeliberationConfig {
             proposer_model: "claude-sonnet-4-6".to_string(),
             synthesizer_model: "claude-sonnet-4-6".to_string(),
             discovery_model: "claude-haiku-4-5-20251001".to_string(),
+            cross_team_pass: true,
         }
     }
 }

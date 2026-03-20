@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! File-level dependency graph for codebase indexing.
 //!
 //! Builds a directed graph of file dependencies from extracted import statements.

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! State detection and auto-response for Mahalaxmi.
 //!
 //! Pattern-matching rules for detecting terminal states, completion markers,
@@ -12,6 +10,7 @@ pub mod result;
 pub mod rule;
 pub mod rule_set;
 pub mod verification;
+pub mod verification_parser;
 
 pub use errors::analysis::ErrorPatternAnalysis;
 pub use errors::cluster::ErrorCluster;
@@ -24,6 +23,9 @@ pub use rule::DetectionRule;
 pub use rule_set::BuiltinRuleSets;
 pub use verification::{
     LintIssue, LintResult, LintSeverity, LintTool, TestFailure, TestFramework, TestResult,
+};
+pub use verification_parser::{
+    has_verification_failures, parse_verification_lines, VerificationLineResult,
 };
 
 pub use mahalaxmi_core::config::MahalaxmiConfig;

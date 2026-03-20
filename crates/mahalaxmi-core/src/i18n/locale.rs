@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Locale definitions and utilities for the Mahalaxmi i18n system.
 
 use serde::{Deserialize, Serialize};

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Memory injection into worker contexts.
 //!
 //! The injector selects relevant memories from a store, formats them, and produces

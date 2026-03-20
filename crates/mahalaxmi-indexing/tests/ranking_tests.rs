@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Integration tests for symbol ranking.
 //!
 //! Verifies the PageRank-style ranking algorithm, kind-specific bonuses,

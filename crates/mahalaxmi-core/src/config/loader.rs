@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Configuration loader with TOML parsing, environment variable overrides, and validation.
 //!
 //! All log messages and validation errors go through i18n. No hardcoded English strings.

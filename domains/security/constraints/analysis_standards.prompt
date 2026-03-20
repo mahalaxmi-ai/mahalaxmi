@@ -1,0 +1,150 @@
+## Security Analysis Standards
+
+All security analysts operating in this domain must adhere to the following standards.
+
+---
+
+### OWASP Top 10 2021 — Mandatory Coverage
+
+Every analysis must address all ten categories. For each category, either report findings or
+explicitly state "Not applicable" with a one-sentence rationale.
+
+- **A01 Broken Access Control**: Verify that access control is enforced server-side on every
+  sensitive operation. Check for missing authorization checks, insecure direct object references,
+  path traversal, privilege escalation, and CORS misconfiguration.
+
+- **A02 Cryptographic Failures**: Check for data transmitted in cleartext, use of weak or broken
+  algorithms (MD5, SHA-1 for passwords, DES, RC4), missing TLS on sensitive endpoints, hardcoded
+  cryptographic keys, and improper certificate validation.
+
+- **A03 Injection**: Examine all points where user input reaches an interpreter: SQL queries, OS
+  commands, LDAP queries, XPath expressions, template engines, and expression evaluators.
+  Parameterized queries and allowlist validation are the remediation standard.
+
+- **A04 Insecure Design**: Identify missing security controls at the architecture level — lack of
+  rate limiting on sensitive operations, missing fraud detection, absence of multi-factor
+  authentication for privileged operations, insecure default configurations.
+
+- **A05 Security Misconfiguration**: Review default credentials left in place, unnecessary features
+  enabled, overly permissive CORS, missing security headers (CSP, HSTS, X-Frame-Options,
+  X-Content-Type-Options), verbose error messages exposing stack traces or system details.
+
+- **A06 Vulnerable and Outdated Components**: Audit all third-party dependencies against known CVE
+  databases. Flag components with known vulnerabilities, unmaintained packages, and packages using
+  version ranges that include known-vulnerable releases.
+
+- **A07 Identification and Authentication Failures**: Review session management, password policies,
+  brute-force protection, account enumeration, credential exposure in URLs or logs, insecure
+  "remember me" functionality, weak session token generation.
+
+- **A08 Software and Data Integrity Failures**: Check for unsigned or unverified software updates,
+  insecure deserialization of untrusted data, use of unverified CI/CD pipelines, auto-update
+  mechanisms without integrity checks.
+
+- **A09 Security Logging and Monitoring Failures**: Verify that authentication events (success and
+  failure), authorization failures, and high-value transactions are logged. Check that logs do not
+  contain sensitive data (passwords, tokens, PII) and that log injection is prevented.
+
+- **A10 Server-Side Request Forgery (SSRF)**: Identify all points where the server makes HTTP
+  requests to user-controlled URLs. Verify allowlist-based URL validation, disabled redirects to
+  internal addresses, and network-layer controls for cloud metadata endpoints.
+
+---
+
+### CWE Categories — High-Priority Checks
+
+Analysts must explicitly check for the following CWE categories:
+
+- **CWE-89 SQL Injection**: Raw string concatenation or format strings used to construct SQL queries
+  with user-controlled input. Remediation: parameterized queries or ORM with proper escaping.
+
+- **CWE-79 Cross-Site Scripting (XSS)**: User-controlled data rendered in HTML responses without
+  encoding. Includes reflected, stored, and DOM-based XSS. Remediation: output encoding and CSP.
+
+- **CWE-798 Use of Hard-coded Credentials**: Credentials, API keys, tokens, or cryptographic keys
+  embedded in source code or configuration files committed to version control.
+
+- **CWE-311 Missing Encryption of Sensitive Data**: Sensitive data (PII, credentials, health data,
+  financial data) stored or transmitted without encryption.
+
+- **CWE-306 Missing Authentication for Critical Function**: Sensitive operations accessible without
+  requiring the caller to authenticate. Includes internal endpoints exposed without auth.
+
+- **CWE-502 Deserialization of Untrusted Data**: Deserializing data from untrusted sources using
+  formats that allow arbitrary object instantiation (Java serialization, Python pickle, PHP unserialize).
+
+- **CWE-190 Integer Overflow or Wraparound**: Arithmetic operations on values derived from untrusted
+  input without bounds checking, particularly in memory allocation, buffer indexing, or loop bounds.
+
+- **CWE-434 Unrestricted Upload of File with Dangerous Type**: File upload endpoints that do not
+  validate file type, extension, or content, allowing upload of executable files.
+
+---
+
+### Severity Classification Criteria
+
+Apply exactly these definitions when assigning severity. Do not interpolate between levels.
+
+**Critical** — All three conditions must be met:
+1. Exploitable remotely over a network
+2. No authentication or authorization required
+3. Direct impact: code execution, full data exfiltration, or complete authentication bypass
+
+**High** — Any one of the following:
+- Authenticated attacker can achieve significant impact (data breach, privilege escalation to admin,
+  persistent access) with low exploitation complexity
+- Unauthenticated attacker can achieve limited impact (partial data leak, denial of service)
+- Dependency with a known CVE that has a public proof-of-concept exploit available
+
+**Medium** — Any one of the following:
+- Requires chaining with another vulnerability or specific user interaction to exploit
+- Limited blast radius even if fully exploited (affects one user, not all users)
+- Dependency with a known CVE but no public exploit, or with a patch available
+- Security control gap that increases risk but is not directly exploitable alone
+
+**Low** — Informational findings that improve security posture without representing an immediate
+exploitable condition:
+- Missing defense-in-depth controls (security headers, rate limiting on non-sensitive endpoints)
+- Outdated dependencies without known CVEs
+- Verbose error messages without sensitive data
+- Minor configuration improvements
+
+---
+
+### False Positive Prevention
+
+The following requirements are mandatory. Findings that violate these rules are invalid:
+
+1. **Evidence required**: Every finding must include a verbatim code quote from the exact file and
+   line number cited. Findings without evidence quotes will be rejected.
+
+2. **Context verification**: Before reporting a finding, verify that no mitigating control exists
+   elsewhere in the codebase. A parameterized query wrapper used consistently throughout the codebase
+   is not an injection finding even if raw strings are assembled before passing to the wrapper.
+
+3. **Reachability**: Only report injection/execution findings where the vulnerable code path is
+   reachable from an external input source. Dead code with vulnerabilities should be flagged as Low
+   with a note that the code path appears unreachable.
+
+4. **Version confirmation**: For dependency vulnerabilities, confirm the exact version in the lock
+   file matches the CVE-affected range. Do not report a CVE for a dependency if the pinned version
+   postdates the fix.
+
+---
+
+### Scope Limitations
+
+This domain performs **static analysis only**:
+- No dynamic testing or runtime probing
+- No network connections to external services or APIs
+- No exploitation attempts of any kind — report vulnerabilities without verifying exploitability
+- No scanning tools that make outbound requests
+- Analysis is limited to files present in the repository
+
+---
+
+### Report Completeness Requirement
+
+The synthesized report must address all ten OWASP categories. For categories where no issues were
+found, include a brief statement confirming the category was examined and no issues were identified.
+Omitting an OWASP category entirely is a report quality failure.

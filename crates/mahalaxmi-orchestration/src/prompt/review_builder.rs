@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Review prompt builder — assembles the prompt for cross-provider code review.
 //!
 //! After a worker completes its task, the review chain sends the worker's output

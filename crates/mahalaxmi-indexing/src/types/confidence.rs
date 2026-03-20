@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Confidence scoring for indexed symbols and relevance ranking.
 //!
 //! Provides a discrete confidence classification used by the ranking

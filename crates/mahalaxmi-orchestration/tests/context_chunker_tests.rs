@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::path::Path;
 
 use mahalaxmi_orchestration::context::{chunker::select_chunks, CodeChunk, CodeChunker};

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Integration tests for the Mahalaxmi foundation (Step 1).
 //!
 //! Verifies that all crates link correctly and the

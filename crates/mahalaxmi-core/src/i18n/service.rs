@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Translation service backed by Fluent `.ftl` locale files.
 
 use std::collections::HashMap;

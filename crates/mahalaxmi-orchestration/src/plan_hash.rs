@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use sha2::{Digest, Sha256};
 
 /// Compute a deterministic SHA-256 hash of a task plan.

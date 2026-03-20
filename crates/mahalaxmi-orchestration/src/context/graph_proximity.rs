@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Graph-proximity context scoring for context routing.
 //!
 //! Scores indexed files by their import-graph distance to the task's

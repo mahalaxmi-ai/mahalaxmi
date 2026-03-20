@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use serde::{Deserialize, Serialize};
 
 use crate::consensus::normalizer::TaskGroup;
@@ -42,6 +40,14 @@ pub struct ArbitrationConfig {
     /// API endpoint. Default: `"https://api.anthropic.com/v1/messages"`.
     #[serde(default = "default_arb_endpoint")]
     pub api_endpoint: String,
+    /// Optional domain-specific conflict resolution instruction.
+    ///
+    /// When `Some`, replaces the hardcoded arbitration system instruction with
+    /// this domain-provided text. Enables `ConsensusAlgorithm::ManagerAdjudicated`
+    /// and `ConsensusAlgorithm::BestOfN` per-domain arbitration behaviour.
+    /// When `None`, the default hardcoded instruction is used unchanged.
+    #[serde(default)]
+    pub domain_conflict_prompt: Option<String>,
 }
 
 impl Default for ArbitrationConfig {
@@ -51,6 +57,7 @@ impl Default for ArbitrationConfig {
             similarity_band: default_similarity_band(),
             model: default_arb_model(),
             api_endpoint: default_arb_endpoint(),
+            domain_conflict_prompt: None,
         }
     }
 }
@@ -205,6 +212,10 @@ impl ConsensusArbitrator {
     /// Finds pairs with similarity scores in the configured band, packages
     /// them into a single prompt, calls the AI model, and applies the merge
     /// decisions. On any error, returns the groups unchanged.
+    ///
+    /// When `ArbitrationConfig::domain_conflict_prompt` is `Some`, the domain
+    /// instruction replaces the hardcoded system prompt, enabling
+    /// `ConsensusAlgorithm::ManagerAdjudicated` behaviour.
     pub async fn arbitrate(&self, groups: Vec<TaskGroup>) -> Vec<TaskGroup> {
         let ambiguous_pairs = self.find_ambiguous_pairs(&groups);
         if ambiguous_pairs.is_empty() {
@@ -213,15 +224,18 @@ impl ConsensusArbitrator {
         tracing::info!(
             pairs = ambiguous_pairs.len(),
             mode = %self.mode.name(),
+            has_domain_prompt = self.config.domain_conflict_prompt.is_some(),
             "Arbitrating ambiguous task pair(s) via LLM"
         );
+        let optional_prompt = self.config.domain_conflict_prompt.as_deref();
         let result = match &self.mode {
             ArbitrationMode::DirectApi { api_key, client } => {
-                self.call_api_direct(api_key, client, &groups, &ambiguous_pairs)
+                self.call_api_direct(api_key, client, &groups, &ambiguous_pairs, optional_prompt)
                     .await
             }
             ArbitrationMode::ClaudeCli { binary } => {
-                self.call_cli(binary, &groups, &ambiguous_pairs).await
+                self.call_cli(binary, &groups, &ambiguous_pairs, optional_prompt)
+                    .await
             }
         };
         match result {
@@ -249,8 +263,18 @@ impl ConsensusArbitrator {
     }
 
     /// Build the arbitration prompt for a set of ambiguous pairs.
-    fn build_prompt(groups: &[TaskGroup], pairs: &[(usize, usize)]) -> String {
-        let mut prompt = String::from(
+    ///
+    /// When `optional_prompt` is `Some`, it replaces the default hardcoded
+    /// system instruction. This allows domain configurations such as
+    /// `ConsensusAlgorithm::ManagerAdjudicated` and `ConsensusAlgorithm::BestOfN`
+    /// to inject custom arbitration behaviour. When `None`, the default
+    /// instruction is used unchanged.
+    fn build_prompt(
+        optional_prompt: Option<&str>,
+        groups: &[TaskGroup],
+        pairs: &[(usize, usize)],
+    ) -> String {
+        let default_instruction =
             "You are a software project manager reviewing AI-generated task lists.\n\
              Multiple AI managers independently analyzed the same codebase and proposed tasks.\n\
              Some tasks may be duplicates with different titles.\n\n\
@@ -259,9 +283,10 @@ impl ConsensusArbitrator {
              Respond with a JSON array of decisions:\n\
              [{\"group_ids\": [i, j], \"action\": \"merge\"|\"split\", \
              \"canonical_title\": \"...\", \"canonical_description\": \"...\"}]\n\
-             Only include canonical_title and canonical_description for merge actions.\n\n\
-             TASKS:\n",
-        );
+             Only include canonical_title and canonical_description for merge actions.";
+
+        let instruction = optional_prompt.unwrap_or(default_instruction);
+        let mut prompt = format!("{instruction}\n\nTASKS:\n");
 
         for (i, j) in pairs {
             let a = &groups[*i];
@@ -290,8 +315,9 @@ impl ConsensusArbitrator {
         client: &reqwest::Client,
         groups: &[TaskGroup],
         pairs: &[(usize, usize)],
+        optional_prompt: Option<&str>,
     ) -> Result<Vec<ArbitrationDecision>, Box<dyn std::error::Error + Send + Sync>> {
-        let prompt = Self::build_prompt(groups, pairs);
+        let prompt = Self::build_prompt(optional_prompt, groups, pairs);
         let body = serde_json::json!({
             "model": self.config.model,
             "max_tokens": 1024,
@@ -333,10 +359,11 @@ impl ConsensusArbitrator {
         binary: &str,
         groups: &[TaskGroup],
         pairs: &[(usize, usize)],
+        optional_prompt: Option<&str>,
     ) -> Result<Vec<ArbitrationDecision>, Box<dyn std::error::Error + Send + Sync>> {
         use tokio::io::AsyncWriteExt;
 
-        let prompt = Self::build_prompt(groups, pairs);
+        let prompt = Self::build_prompt(optional_prompt, groups, pairs);
 
         let mut child = tokio::process::Command::new(binary)
             .arg("--print")
@@ -495,11 +522,58 @@ mod tests {
             make_group("GitHubIssuesHandler", "Processes issues"),
         ];
         let pairs = vec![(0usize, 1usize)];
-        let prompt = ConsensusArbitrator::build_prompt(&groups, &pairs);
+        let prompt = ConsensusArbitrator::build_prompt(None, &groups, &pairs);
         assert!(prompt.contains("GitHub Issues Adapter"));
         assert!(prompt.contains("GitHubIssuesHandler"));
         assert!(prompt.contains("merge"));
         assert!(prompt.contains("split"));
+    }
+
+    #[test]
+    fn test_build_prompt_uses_domain_conflict_prompt_when_some() {
+        let groups = vec![
+            make_group("Task Alpha", "First task"),
+            make_group("Task Beta", "Second task"),
+        ];
+        let pairs = vec![(0usize, 1usize)];
+        let domain_instruction = "Custom domain arbitration: prefer the most specific task title.";
+        let prompt = ConsensusArbitrator::build_prompt(Some(domain_instruction), &groups, &pairs);
+        assert!(
+            prompt.contains(domain_instruction),
+            "Prompt should contain the domain instruction"
+        );
+        assert!(
+            prompt.contains("Task Alpha"),
+            "Prompt should still include task titles"
+        );
+        assert!(
+            !prompt.contains("You are a software project manager"),
+            "Default instruction should be replaced when domain prompt is provided"
+        );
+    }
+
+    #[test]
+    fn test_arbitration_config_domain_conflict_prompt_default_is_none() {
+        let config = ArbitrationConfig::default();
+        assert!(
+            config.domain_conflict_prompt.is_none(),
+            "domain_conflict_prompt should default to None"
+        );
+    }
+
+    #[test]
+    fn test_arbitration_config_domain_conflict_prompt_serde_round_trip() {
+        let config = ArbitrationConfig {
+            domain_conflict_prompt: Some("Select the most thorough analysis.".to_owned()),
+            ..ArbitrationConfig::default()
+        };
+        let json = serde_json::to_string(&config).expect("serialization failed");
+        let restored: ArbitrationConfig =
+            serde_json::from_str(&json).expect("deserialization failed");
+        assert_eq!(
+            restored.domain_conflict_prompt.as_deref(),
+            Some("Select the most thorough analysis.")
+        );
     }
 
     #[test]

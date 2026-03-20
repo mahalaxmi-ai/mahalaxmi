@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Lexical context scoring for context routing.
 //!
 //! Scores indexed files by the Jaccard token similarity between the task's

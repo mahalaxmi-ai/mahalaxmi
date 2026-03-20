@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Requirements normalization pre-processor.
 //!
 //! Converts arbitrary user-provided requirements documents (prose paragraphs,
@@ -101,11 +99,19 @@ impl RequirementsNormalizer {
         }
 
         if raw.len() > NORMALIZATION_CHAR_BUDGET {
-            tracing::debug!(
+            // WARN: skipping normalization is a performance degradation — the
+            // manager will receive un-normalized requirements which may affect
+            // plan quality.  Operators should see this in production log filters
+            // so they can increase NORMALIZATION_CHAR_BUDGET or pre-process
+            // large requirements before submission.
+            tracing::warn!(
                 normalizer = "requirements",
                 original_chars = raw.len(),
                 budget = NORMALIZATION_CHAR_BUDGET,
-                "Input exceeds normalization budget — skipping CLI normalization, using original text"
+                "Input exceeds normalization budget ({} chars > {} limit) — \
+                 skipping CLI normalization, using original text",
+                raw.len(),
+                NORMALIZATION_CHAR_BUDGET
             );
             return raw.to_owned();
         }

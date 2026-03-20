@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Team memory sync: export and import of memory entries to/from JSON files.
 //!
 //! Enables cross-team sharing of Project- and Global-scoped memory entries.

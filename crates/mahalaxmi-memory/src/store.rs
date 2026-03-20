@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! In-memory store for shared memory entries.
 
 use crate::entry::{MemoryEntry, MemoryScope};

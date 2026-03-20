@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use crate::consensus::complexity::ComplexityWeightedStrategy;
 use crate::consensus::intersection::IntersectionStrategy;
 use crate::consensus::normalizer::{group_matching_tasks, TaskGroup};
@@ -7,6 +5,7 @@ use crate::consensus::strategy::ConsensusStrategyImpl;
 use crate::consensus::union::UnionStrategy;
 use crate::consensus::weighted::WeightedVotingStrategy;
 use crate::models::{ConsensusConfiguration, ConsensusResult, ManagerProposal};
+use mahalaxmi_core::domain::ConsensusAlgorithm;
 use mahalaxmi_core::i18n::I18nService;
 use mahalaxmi_core::types::{ConsensusStrategy, DeveloperId};
 use mahalaxmi_core::MahalaxmiResult;
@@ -95,6 +94,69 @@ impl ConsensusEngine {
     ) -> MahalaxmiResult<ConsensusResult> {
         let strategy = self.build_strategy(developer_weights);
         let mut result = strategy.evaluate(proposals, &self.config, i18n)?;
+        result.cycle_label = resolve_cycle_label(proposals);
+        Ok(result)
+    }
+
+    /// Evaluate manager proposals using a domain-specific consensus algorithm.
+    ///
+    /// Applies additional domain-level filtering on top of the base consensus
+    /// strategy before delegating to the configured strategy implementation.
+    ///
+    /// Algorithm behaviour:
+    /// - `None` / `Unanimous`: identical to [`Self::evaluate`] — existing behaviour unchanged.
+    /// - `Majority { threshold }`: task groups whose fraction of supporting proposers
+    ///   is below `threshold` are dropped before strategy evaluation.  A group with
+    ///   `n` entries out of `total` proposals passes when `n / total >= threshold`.
+    /// - `BestOfN { .. }`: the arbitration prompt injection is handled at the
+    ///   `ArbitrationConfig::domain_conflict_prompt` level by the driver; the engine
+    ///   delegates to the standard evaluation path.
+    /// - `ManagerAdjudicated { .. }`: same as `BestOfN` — prompt injection is at the
+    ///   arbitrator layer; the engine delegates to standard evaluation.
+    /// - `Synthesis { .. }`: handled post-worker-completion by the driver; the engine
+    ///   delegates to standard evaluation here so a plan can still be built.
+    pub fn evaluate_with_domain_algorithm(
+        &self,
+        proposals: &[ManagerProposal],
+        i18n: &I18nService,
+        domain_algorithm: Option<&ConsensusAlgorithm>,
+    ) -> MahalaxmiResult<ConsensusResult> {
+        let groups = group_matching_tasks(proposals);
+        let total_proposals = proposals.len() as u32;
+        let successful = proposals.iter().filter(|p| p.completed).count() as u32;
+
+        let filtered_groups: Vec<TaskGroup> = match domain_algorithm {
+            Some(ConsensusAlgorithm::Majority { threshold }) => {
+                let threshold = *threshold;
+                let total = proposals.len().max(1);
+                groups
+                    .into_iter()
+                    .filter(|g| g.entries.len() as f32 / total as f32 >= threshold)
+                    .collect()
+            }
+            Some(ConsensusAlgorithm::Synthesis { .. }) => {
+                // Synthesis consolidation runs post-worker-completion via the
+                // orchestration driver; the engine's role here is plan-building
+                // only.  Delegate to standard evaluation so workers receive a
+                // well-formed execution plan.
+                tracing::debug!(
+                    algorithm = "synthesis",
+                    phase = "plan-build",
+                    note = "synthesis-manager-runs-post-worker"
+                );
+                groups
+            }
+            _ => groups,
+        };
+
+        let strategy = self.build_strategy(HashMap::new());
+        let mut result = strategy.evaluate_groups(
+            filtered_groups,
+            &self.config,
+            i18n,
+            total_proposals,
+            successful,
+        )?;
         result.cycle_label = resolve_cycle_label(proposals);
         Ok(result)
     }
@@ -244,6 +306,88 @@ mod tests {
         assert!(!is_valid_cycle_label("-leading-hyphen"));
         assert!(!is_valid_cycle_label("trailing-hyphen-"));
         assert!(!is_valid_cycle_label("double--hyphen"));
+    }
+
+    #[test]
+    fn evaluate_with_domain_algorithm_majority_filters_low_support() {
+        use crate::models::proposal::ManagerProposal;
+        use crate::models::{proposal::ProposedTask, ConsensusConfiguration};
+        use mahalaxmi_core::domain::ConsensusAlgorithm;
+        use mahalaxmi_core::i18n::{locale::SupportedLocale, I18nService};
+        use mahalaxmi_core::types::{ConsensusStrategy, ManagerId};
+
+        let i18n = I18nService::new(SupportedLocale::EnUs);
+        let config = ConsensusConfiguration {
+            strategy: ConsensusStrategy::Union,
+            ..ConsensusConfiguration::default()
+        };
+        let engine = ConsensusEngine::new(config);
+
+        // 3 proposals, only 1 proposes TaskB — with threshold 0.67 it should be dropped.
+        let task_a = ProposedTask::new("Task A", "Shared task");
+        let task_b = ProposedTask::new("Task B", "Minority task");
+
+        let p1 = ManagerProposal::new(ManagerId::new("m0"), vec![task_a.clone()], 100);
+        let p2 = ManagerProposal::new(
+            ManagerId::new("m1"),
+            vec![task_a.clone(), task_b.clone()],
+            100,
+        );
+        let p3 = ManagerProposal::new(ManagerId::new("m2"), vec![task_a.clone()], 100);
+
+        let proposals = vec![p1, p2, p3];
+        let algo = ConsensusAlgorithm::Majority { threshold: 0.67 };
+        let result = engine
+            .evaluate_with_domain_algorithm(&proposals, &i18n, Some(&algo))
+            .unwrap();
+
+        // Task A: 3/3 = 1.0 >= 0.67 → passes
+        // Task B: 1/3 = 0.33 < 0.67 → filtered out
+        assert!(
+            result.agreed_tasks.iter().any(|t| t.title == "Task A"),
+            "Task A should pass majority threshold"
+        );
+        assert!(
+            result.agreed_tasks.iter().all(|t| t.title != "Task B"),
+            "Task B should be filtered by majority threshold"
+        );
+    }
+
+    #[test]
+    fn evaluate_with_domain_algorithm_unanimous_is_unchanged() {
+        use crate::models::proposal::ManagerProposal;
+        use crate::models::{proposal::ProposedTask, ConsensusConfiguration};
+        use mahalaxmi_core::domain::ConsensusAlgorithm;
+        use mahalaxmi_core::i18n::{locale::SupportedLocale, I18nService};
+        use mahalaxmi_core::types::{ConsensusStrategy, ManagerId};
+
+        let i18n = I18nService::new(SupportedLocale::EnUs);
+        let config = ConsensusConfiguration {
+            strategy: ConsensusStrategy::Union,
+            ..ConsensusConfiguration::default()
+        };
+        let engine = ConsensusEngine::new(config);
+
+        let task = ProposedTask::new("Shared Task", "A shared task");
+        let proposals = vec![
+            ManagerProposal::new(ManagerId::new("m0"), vec![task.clone()], 100),
+            ManagerProposal::new(ManagerId::new("m1"), vec![task.clone()], 100),
+        ];
+
+        let result_default = engine.evaluate(&proposals, &i18n).unwrap();
+        let result_with_algo = engine
+            .evaluate_with_domain_algorithm(
+                &proposals,
+                &i18n,
+                Some(&ConsensusAlgorithm::Unanimous),
+            )
+            .unwrap();
+
+        assert_eq!(
+            result_default.agreed_tasks.len(),
+            result_with_algo.agreed_tasks.len(),
+            "Unanimous algorithm should produce identical results to default evaluate"
+        );
     }
 
     #[test]

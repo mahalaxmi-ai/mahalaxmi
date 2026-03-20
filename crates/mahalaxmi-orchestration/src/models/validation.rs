@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Post-cycle requirement validation — types for holistic assessment of cycle output.
 //!
 //! After all workers complete, the validation agent assesses whether the

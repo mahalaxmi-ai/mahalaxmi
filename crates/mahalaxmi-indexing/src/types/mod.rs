@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Core types for the codebase indexing system.
 //!
 //! This module defines the foundational types used throughout the indexing crate:

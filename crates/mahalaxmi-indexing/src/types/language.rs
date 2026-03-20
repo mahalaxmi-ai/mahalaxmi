@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Language identification and tree-sitter grammar integration.
 //!
 //! Maps file extensions to programming languages and provides access

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! File-based JSON persistence for memory stores.
 
 use crate::persistence::traits::MemoryPersistence;

@@ -1,17 +1,19 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::collections::VecDeque;
 
-/// Default raw replay buffer capacity in bytes (512 KB).
+/// Raw replay buffer capacity in bytes (2 MB).
 ///
 /// When the replay buffer reaches its capacity, the oldest bytes are discarded
 /// to make room for new output. This ensures the most recent terminal state is
 /// always available for replay to xterm.js.
 ///
-/// Orchestration terminals may override this to a larger value (e.g., 2 MB) via
-/// `TerminalConfig::raw_replay_capacity_bytes` to avoid losing stream-json data
-/// from large AI provider responses.
-pub const DEFAULT_RAW_REPLAY_CAPACITY_BYTES: usize = 512 * 1024;
+/// 2 MB accommodates large AI provider stream-json responses (Claude Code can
+/// emit ~1 MB of stream-json for complex manager prompts). A warning is emitted
+/// via `tracing::warn!` when the buffer reaches 75% of this capacity.
+pub const RAW_REPLAY_BUFFER_BYTES: usize = 2 * 1024 * 1024;
+
+/// Alias retained for backward compatibility with code that references the old name.
+#[deprecated(since = "0.0.0", note = "Use RAW_REPLAY_BUFFER_BYTES instead")]
+pub const DEFAULT_RAW_REPLAY_CAPACITY_BYTES: usize = RAW_REPLAY_BUFFER_BYTES;
 
 /// Ring buffer for terminal output with configurable capacity.
 ///
@@ -175,6 +177,22 @@ impl OutputBuffer {
             return;
         }
         self.total_raw_bytes += data.len();
+
+        // Warn once when the buffer crosses 75% capacity so operators can
+        // detect sessions generating unusually large output before data loss
+        // occurs.  The check uses the current fill level (before inserting new
+        // data) so it fires on the push that crosses the threshold.
+        let fill_before = self.raw_replay.len();
+        let warn_threshold = self.raw_capacity * 3 / 4;
+        if fill_before < warn_threshold && fill_before + data.len() >= warn_threshold {
+            tracing::warn!(
+                buffer_used_bytes = fill_before + data.len(),
+                buffer_cap_bytes = self.raw_capacity,
+                fill_pct = ((fill_before + data.len()) * 100) / self.raw_capacity,
+                "PTY replay buffer at {}% capacity — oldest bytes will be discarded if output continues",
+                ((fill_before + data.len()) * 100) / self.raw_capacity
+            );
+        }
 
         // If the incoming chunk alone exceeds (or equals) capacity,
         // discard everything and keep only the tail of the new data.

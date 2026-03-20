@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Core domain types, traits, and shared infrastructure for Mahalaxmi.
 //!
 //! This crate provides the foundation that all other Mahalaxmi crates build upon,
 //! including internationalization, configuration, error handling, and logging.
 
 pub mod config;
+pub mod domain;
 pub mod developer;
 pub mod error;
 pub mod i18n;

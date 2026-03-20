@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Symbol importance ranking using a PageRank-style algorithm.
 //!
 //! Scores files and symbols based on the file dependency graph structure.

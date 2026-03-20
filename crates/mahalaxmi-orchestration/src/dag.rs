@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::error::MahalaxmiError;
 use mahalaxmi_core::i18n::messages::keys;
 use mahalaxmi_core::i18n::I18nService;
@@ -150,6 +148,73 @@ pub fn topological_sort(tasks: &[WorkerTask], i18n: &I18nService) -> MahalaxmiRe
     }
 
     Ok(result)
+}
+
+/// Inject synthetic dependency edges for tasks that share file paths (REQ-005).
+///
+/// When two or more tasks both claim the same file in their `affected_files`
+/// list they would be dispatched in parallel and both workers would commit to
+/// the same file, causing guaranteed merge conflicts at PR creation time.
+///
+/// This function serializes those tasks by making each one depend on the
+/// previous one (in deterministic sort order by `task_id`).  Only new edges
+/// are added — if a dependency already exists it is not duplicated.
+///
+/// A `tracing::warn!` is emitted for every synthetic edge so the operator
+/// can see which tasks were serialized and why.
+///
+/// Call this **before** `build_phases()` so the serialization edges are
+/// visible to the topological sort.
+pub fn add_file_conflict_edges(tasks: &mut [WorkerTask]) {
+    // Build file → [task_id …] index.
+    let mut path_to_tasks: HashMap<String, Vec<TaskId>> = HashMap::new();
+
+    for task in tasks.iter() {
+        for file in &task.affected_files {
+            path_to_tasks
+                .entry(file.clone())
+                .or_default()
+                .push(task.task_id.clone());
+        }
+    }
+
+    // Collect synthetic edges: (earlier_id, later_id)
+    let mut new_edges: Vec<(TaskId, TaskId)> = Vec::new();
+
+    for (file, mut task_ids) in path_to_tasks {
+        if task_ids.len() <= 1 {
+            continue;
+        }
+        // Deterministic ordering so the serialization is stable across runs.
+        task_ids.sort_by(|a, b| a.as_str().cmp(b.as_str()));
+        for window in task_ids.windows(2) {
+            let earlier = &window[0];
+            let later = &window[1];
+            // Skip if the edge already exists.
+            let already = tasks
+                .iter()
+                .find(|t| &t.task_id == later)
+                .map(|t| t.dependencies.contains(earlier))
+                .unwrap_or(false);
+            if !already {
+                tracing::warn!(
+                    earlier_task = %earlier,
+                    later_task = %later,
+                    shared_file = %file,
+                    "REQ-005: serializing task {} after task {} — both claim file '{}'",
+                    later, earlier, file
+                );
+                new_edges.push((earlier.clone(), later.clone()));
+            }
+        }
+    }
+
+    // Apply edges: add each synthetic dependency to the later task.
+    for (earlier, later) in new_edges {
+        if let Some(task) = tasks.iter_mut().find(|t| t.task_id == later) {
+            task.dependencies.push(earlier);
+        }
+    }
 }
 
 /// Build execution phases from a set of tasks using topological ordering.

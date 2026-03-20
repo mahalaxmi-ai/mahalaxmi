@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Pre-configured tracing spans for Mahalaxmi subsystems.
 //!
 //! These span helpers ensure consistent structured logging across the application.

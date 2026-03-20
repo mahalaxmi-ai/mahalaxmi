@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! End-to-end pipeline tests for the indexing system.
 //!
 //! Each test creates a temporary directory with real source files, builds a

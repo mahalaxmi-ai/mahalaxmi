@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 12: Cross-Provider Handoff.
 
 use mahalaxmi_core::types::{ProviderId, WorkerId};

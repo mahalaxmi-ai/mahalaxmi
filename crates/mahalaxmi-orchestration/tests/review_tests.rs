@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for the cross-provider review chain (P6).
 
 use mahalaxmi_core::config::ContextFormat;

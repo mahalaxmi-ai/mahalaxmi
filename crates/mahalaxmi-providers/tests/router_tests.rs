@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 10: Task Router — routing tasks to optimal providers.
 
 use mahalaxmi_core::types::ProviderId;

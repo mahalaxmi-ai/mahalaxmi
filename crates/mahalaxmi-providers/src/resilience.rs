@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Provider resilience — health checks, circuit breakers, and automatic failover.
 //!
 //! The `CircuitBreaker` tracks provider failures and automatically opens

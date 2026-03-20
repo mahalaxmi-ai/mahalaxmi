@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::i18n::I18nService;
 use mahalaxmi_core::types::developer::DeveloperId;
 use mahalaxmi_core::types::{TaskId, WorkerId};
@@ -243,7 +241,7 @@ impl ExecutionPlan {
             .collect();
 
         // Convert ConsensusTask → WorkerTask
-        let worker_tasks: Vec<WorkerTask> = result
+        let mut worker_tasks: Vec<WorkerTask> = result
             .agreed_tasks
             .iter()
             .enumerate()
@@ -266,6 +264,10 @@ impl ExecutionPlan {
                 wt
             })
             .collect();
+
+        // REQ-005: inject synthetic dependency edges for tasks that share files.
+        // Must run before build_phases() so the topological sort sees the edges.
+        crate::dag::add_file_conflict_edges(&mut worker_tasks);
 
         // Build phases using the DAG utilities
         let phases = crate::dag::build_phases(&worker_tasks, i18n)?;

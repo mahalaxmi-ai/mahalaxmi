@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Verification pipeline for worker self-verification.
 //!
 //! Sequences verification checks (tests, lint, self-review) and produces

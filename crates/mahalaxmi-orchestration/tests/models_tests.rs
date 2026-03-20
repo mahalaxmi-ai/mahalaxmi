@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::types::{ConsensusStrategy, ManagerId, TaskId, WorkerId};
 use mahalaxmi_orchestration::models::{
     ConsensusResult, ConsensusTask, ExecutionPhase, ExecutionPlan, ManagerProposal, ProposedTask,
@@ -263,6 +261,7 @@ fn queue_statistics_all_completed() {
         blocked: 0,
         verifying: 0,
         failed: 0,
+        skipped: 0,
     };
     assert!(stats_done.all_completed());
 
@@ -274,6 +273,7 @@ fn queue_statistics_all_completed() {
         blocked: 0,
         verifying: 0,
         failed: 0,
+        skipped: 0,
     };
     assert!(!stats_not_done.all_completed());
 
@@ -292,6 +292,7 @@ fn queue_statistics_completion_percentage() {
         blocked: 0,
         verifying: 0,
         failed: 1,
+        skipped: 0,
     };
     let pct = stats.completion_percentage();
     assert!((pct - 70.0).abs() < f64::EPSILON);

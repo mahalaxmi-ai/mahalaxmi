@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Manager prompt builder — assembles the prompt sent to AI managers.
 //!
 //! The prompt instructs the AI manager to analyze a codebase and produce
@@ -10,7 +8,10 @@
 //! rules) are injected between the system role and context sections. These
 //! replace boilerplate that was previously duplicated in every Ganesha template.
 
+use std::sync::Arc;
+
 use mahalaxmi_core::config::ContextFormat;
+use mahalaxmi_core::domain::{DecompositionStrategy, DomainConfig};
 
 /// Configuration for building a manager prompt.
 pub struct ManagerPromptConfig {
@@ -38,6 +39,10 @@ pub struct ManagerPromptConfig {
     /// enabled. Tells the manager which requirements were unmet so it can
     /// generate targeted fix tasks.
     pub previous_validation_verdict: Option<String>,
+    /// Optional domain configuration. When `Some`, the domain's prompt strings
+    /// override the built-in hardcoded strings for system role and constraints.
+    /// When `None`, the builder falls back to the hardcoded defaults.
+    pub domain: Option<Arc<dyn DomainConfig>>,
 }
 
 impl Default for ManagerPromptConfig {
@@ -52,6 +57,7 @@ impl Default for ManagerPromptConfig {
             include_quality_mandate: true,
             previous_cycle_report: None,
             previous_validation_verdict: None,
+            domain: None,
         }
     }
 }
@@ -76,35 +82,70 @@ impl ManagerPromptBuilder {
         let effective_format = resolve_format(config.format, &config.provider_id);
         let mut prompt = String::with_capacity(8192);
 
-        // System role
-        prompt.push_str(&Self::system_role(config.worker_count));
+        // System role — prefer domain override, fall back to hardcoded
+        let system_role_text = config
+            .domain
+            .as_ref()
+            .map(|d| d.manager_system_role(config.worker_count))
+            .unwrap_or_else(|| Self::system_role(config.worker_count));
+        prompt.push_str(&system_role_text);
         prompt.push_str("\n\n");
+
+        // Decomposition strategy hint — only injected when non-empty (SoftwareDevelopment and ManagerDefined produce empty hints)
+        if let Some(ref domain) = config.domain {
+            let hint = domain.decomposition_hint();
+            if !hint.is_empty() {
+                let section_label =
+                    if matches!(domain.decomposition_strategy(), DecompositionStrategy::RoleBased { .. }) {
+                        "Decomposition Strategy (RoleBased)"
+                    } else {
+                        "Decomposition Strategy"
+                    };
+                prompt.push_str(&format_section(
+                    section_label,
+                    "decomposition_strategy",
+                    &hint,
+                    effective_format,
+                ));
+                prompt.push_str("\n\n");
+            }
+        }
 
         // Injected system-level sections (replace per-template boilerplate)
         if config.include_quality_mandate {
-            prompt.push_str(&format_section(
-                "Quality Mandate",
-                "quality_mandate",
-                &Self::quality_mandate(config.worker_count),
-                effective_format,
-            ));
-            prompt.push_str("\n\n");
+            if let Some(ref domain) = config.domain {
+                // Domain provides an ordered list of named constraint sections.
+                // Each section name is converted to a snake_case XML/MD tag.
+                for (name, content) in domain.constraint_sections(config.worker_count) {
+                    let tag = name.to_lowercase().replace(' ', "_");
+                    prompt.push_str(&format_section(&name, &tag, &content, effective_format));
+                    prompt.push_str("\n\n");
+                }
+            } else {
+                prompt.push_str(&format_section(
+                    "Quality Mandate",
+                    "quality_mandate",
+                    &Self::quality_mandate(config.worker_count),
+                    effective_format,
+                ));
+                prompt.push_str("\n\n");
 
-            prompt.push_str(&format_section(
-                "Progress Tracking",
-                "progress_tracking",
-                &Self::progress_tracking(),
-                effective_format,
-            ));
-            prompt.push_str("\n\n");
+                prompt.push_str(&format_section(
+                    "Progress Tracking",
+                    "progress_tracking",
+                    &Self::progress_tracking(),
+                    effective_format,
+                ));
+                prompt.push_str("\n\n");
 
-            prompt.push_str(&format_section(
-                "Analysis Rules",
-                "analysis_rules",
-                &Self::analysis_rules(),
-                effective_format,
-            ));
-            prompt.push_str("\n\n");
+                prompt.push_str(&format_section(
+                    "Analysis Rules",
+                    "analysis_rules",
+                    &Self::analysis_rules(),
+                    effective_format,
+                ));
+                prompt.push_str("\n\n");
+            }
         }
 
         // Context sections
@@ -429,6 +470,11 @@ pub(crate) fn format_section(
 mod tests {
     use super::*;
 
+    use std::sync::Arc;
+
+    use mahalaxmi_core::domain::LoadedDomain;
+    use tempfile::TempDir;
+
     fn default_config() -> ManagerPromptConfig {
         ManagerPromptConfig {
             requirements: "Build a web app".to_owned(),
@@ -440,6 +486,7 @@ mod tests {
             include_quality_mandate: true,
             previous_cycle_report: None,
             previous_validation_verdict: None,
+            domain: None,
         }
     }
 
@@ -602,5 +649,166 @@ mod tests {
         assert!(pt_pos < ar_pos, "progress tracking before analysis rules");
         assert!(ar_pos < req_pos, "analysis rules before requirements");
         assert!(req_pos < out_pos, "requirements before output format");
+    }
+
+    // Helper: write a minimal config.yaml with the given decomposition_strategy YAML block
+    // and load it as a LoadedDomain.
+    fn make_domain_with_strategy(strategy_yaml: &str) -> Arc<dyn DomainConfig> {
+        let tmp = TempDir::new().expect("tempdir");
+        let config_yaml = format!(
+            r#"
+id: test_decomp
+description: decomposition strategy test
+manager_uncapped: "uncapped"
+manager_capped: "capped"
+worker_system_role: "worker"
+constraint_sections: []
+{strategy_yaml}
+"#
+        );
+        std::fs::write(tmp.path().join("config.yaml"), &config_yaml)
+            .expect("write config.yaml");
+        let domain = LoadedDomain::load(tmp.path()).expect("load domain");
+        // Keep tmp alive by leaking — acceptable in tests.
+        let _ = std::mem::ManuallyDrop::new(tmp);
+        Arc::new(domain)
+    }
+
+    // Helper: write a config.yaml with a constraint section that contains "HARD CONSTRAINTS"
+    // so we can assert ordering relative to the constraints block.
+    fn make_domain_with_strategy_and_constraints(strategy_yaml: &str) -> Arc<dyn DomainConfig> {
+        let tmp = TempDir::new().expect("tempdir");
+        let config_yaml = format!(
+            r#"
+id: test_decomp_constrained
+description: decomposition strategy test with constraints
+manager_uncapped: "uncapped"
+manager_capped: "capped"
+worker_system_role: "worker"
+constraint_sections:
+  - name: Quality Mandate
+    source: "HARD CONSTRAINTS — test suite sentinel"
+{strategy_yaml}
+"#
+        );
+        std::fs::write(tmp.path().join("config.yaml"), &config_yaml)
+            .expect("write config.yaml");
+        let domain = LoadedDomain::load(tmp.path()).expect("load domain");
+        let _ = std::mem::ManuallyDrop::new(tmp);
+        Arc::new(domain)
+    }
+
+    #[test]
+    fn decomposition_hint_not_injected_for_software_development() {
+        let domain = make_domain_with_strategy("decomposition_strategy: software_development");
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            !prompt.contains("decomposition_strategy"),
+            "SoftwareDevelopment must not inject a decomposition_strategy section"
+        );
+    }
+
+    #[test]
+    fn decomposition_hint_injected_for_section_based() {
+        let domain = make_domain_with_strategy(
+            "decomposition_strategy:\n  section_based:\n    max_section_tokens: 4000\n    overlap_tokens: 200",
+        );
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            prompt.contains("4000"),
+            "SectionBased hint must contain max_section_tokens value"
+        );
+        assert!(
+            prompt.contains("200"),
+            "SectionBased hint must contain overlap_tokens value"
+        );
+    }
+
+    #[test]
+    fn decomposition_hint_injected_for_role_based() {
+        let domain = make_domain_with_strategy(
+            "decomposition_strategy:\n  role_based:\n    roles:\n      - security_auditor",
+        );
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            prompt.contains("security_auditor"),
+            "RoleBased hint must contain the role name"
+        );
+    }
+
+    #[test]
+    fn role_based_hint_appears_before_hard_constraints() {
+        let domain = make_domain_with_strategy_and_constraints(
+            "decomposition_strategy:\n  role_based:\n    roles:\n      - vulnerability_analyst\n      - dependency_auditor",
+        );
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            include_quality_mandate: true,
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            prompt.contains("vulnerability_analyst"),
+            "prompt must contain the hint text"
+        );
+        let hint_pos = prompt
+            .find("vulnerability_analyst")
+            .expect("hint text not found in prompt");
+        let constraints_pos = prompt
+            .find("HARD CONSTRAINTS")
+            .expect("HARD CONSTRAINTS not found in prompt");
+        assert!(
+            hint_pos < constraints_pos,
+            "decomposition hint must appear before HARD CONSTRAINTS in the prompt"
+        );
+    }
+
+    #[test]
+    fn role_based_section_label_includes_role_based_suffix() {
+        let domain = make_domain_with_strategy(
+            "decomposition_strategy:\n  role_based:\n    roles:\n      - secrets_scanner",
+        );
+        // Use Markdown format so the section header appears verbatim in the output.
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            format: ContextFormat::Markdown,
+            provider_id: "openai-foundry".to_owned(),
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            prompt.contains("Decomposition Strategy (RoleBased)"),
+            "RoleBased section header must include '(RoleBased)' suffix; got prompt: {prompt}"
+        );
+    }
+
+    #[test]
+    fn section_based_section_label_does_not_include_role_based_suffix() {
+        let domain = make_domain_with_strategy(
+            "decomposition_strategy:\n  section_based:\n    max_section_tokens: 4000\n    overlap_tokens: 200",
+        );
+        let config = ManagerPromptConfig {
+            domain: Some(domain),
+            format: ContextFormat::Markdown,
+            provider_id: "openai-foundry".to_owned(),
+            ..default_config()
+        };
+        let prompt = ManagerPromptBuilder::build(&config);
+        assert!(
+            !prompt.contains("Decomposition Strategy (RoleBased)"),
+            "SectionBased must not include the '(RoleBased)' suffix"
+        );
     }
 }

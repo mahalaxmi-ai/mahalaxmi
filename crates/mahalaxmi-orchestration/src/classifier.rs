@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Task type classification for multi-provider routing.
 //!
 //! Classifies worker tasks into `TaskType` categories using a hybrid approach:

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for the PTY reader task and bidirectional message routing.
 //!
 //! Covers the full data path from raw PTY bytes → broadcast events → output buffer,

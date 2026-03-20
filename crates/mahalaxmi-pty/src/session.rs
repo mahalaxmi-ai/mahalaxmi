@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::config::OrchestrationConfig;
 use mahalaxmi_core::error::MahalaxmiError;
 use mahalaxmi_core::i18n::messages::keys;
@@ -268,6 +266,18 @@ impl TerminalSessionManager {
     /// Get a mutable reference to a terminal by ID.
     pub fn get_terminal_mut(&mut self, id: &TerminalId) -> Option<&mut ManagedTerminal> {
         self.terminals.get_mut(id).map(|(t, _)| t)
+    }
+
+    /// Return the OS process ID of the PTY child for `id`, if known.
+    ///
+    /// Returns `None` when the terminal is not found or when the PTY backend
+    /// does not expose the child PID (Windows stub). Used by the build
+    /// infrastructure to check for active compiler children before triggering
+    /// stall detection.
+    pub fn terminal_child_pid(&mut self, id: &TerminalId) -> Option<u32> {
+        self.terminals
+            .get_mut(id)
+            .and_then(|(t, _)| t.child_pid())
     }
 
     /// Get the purpose of a terminal by ID.

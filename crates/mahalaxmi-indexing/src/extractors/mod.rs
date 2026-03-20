@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Language-specific symbol extractors and factory.
 
 pub mod c_extractor;

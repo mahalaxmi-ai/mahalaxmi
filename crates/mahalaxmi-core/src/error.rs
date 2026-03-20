@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Error type hierarchy for the Mahalaxmi system.
 //!
 //! All error messages are resolved through the i18n service. No hardcoded English strings.

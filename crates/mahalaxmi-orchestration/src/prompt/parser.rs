@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Manager output parser — extracts JSON from raw AI terminal output.
 //!
 //! AI managers produce a mix of explanatory text and JSON. This parser

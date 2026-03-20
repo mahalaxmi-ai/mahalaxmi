@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Orchestration engine for Mahalaxmi.
 //!
 //! Implements the Manager-Worker DAG execution model, consensus engine,
@@ -14,9 +12,11 @@ pub mod dag;
 pub mod deliberation;
 pub mod diff_scan;
 pub mod error;
+pub mod input_adapter;
 pub mod modes;
 pub mod models;
 pub mod monitor;
+pub mod output_format;
 pub mod plan_hash;
 pub mod prompt;
 pub mod queue;

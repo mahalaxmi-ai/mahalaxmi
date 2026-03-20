@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 13: Fallback & Resilience — circuit breakers and health tracking.
 
 use mahalaxmi_core::types::ProviderId;

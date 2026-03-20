@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use std::collections::HashMap;
 
 use mahalaxmi_core::types::{

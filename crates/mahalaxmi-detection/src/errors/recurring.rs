@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use chrono::{DateTime, Utc};
 use mahalaxmi_core::types::RootCauseCategory;
 use serde::{Deserialize, Serialize};

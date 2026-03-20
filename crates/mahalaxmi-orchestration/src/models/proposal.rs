@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::error::MahalaxmiError;
 use mahalaxmi_core::i18n::I18nService;
 use mahalaxmi_core::types::developer::DeveloperId;

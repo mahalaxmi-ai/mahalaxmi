@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Data models for the orchestration engine.
 //!
 //! Includes manager proposals, consensus results, execution plans,

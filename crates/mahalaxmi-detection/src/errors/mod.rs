@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Error pattern analysis for detecting recurring failures.
 //!
 //! Tracks error occurrences, clusters related errors, and generates

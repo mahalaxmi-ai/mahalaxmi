@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Developer session model for Phase 16 team collaboration.
 //!
 //! Provides the foundational types that represent individual developers

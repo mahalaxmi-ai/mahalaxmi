@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Memory type classification for shared memory entries.
 
 use serde::{Deserialize, Serialize};

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Metadata completeness tests across all providers.
 
 use mahalaxmi_providers::credentials::AuthMode;

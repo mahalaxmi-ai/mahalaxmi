@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::types::{ConsensusStrategy, ManagerId};
 use serde::{Deserialize, Serialize};
 

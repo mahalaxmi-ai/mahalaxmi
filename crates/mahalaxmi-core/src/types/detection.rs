@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Detection domain types shared across crates.
 //!
 //! These types are defined in `mahalaxmi-core` so that both `mahalaxmi-detection`

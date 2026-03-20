@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Integration tests for tree-sitter symbol extraction.
 //!
 //! Each test creates a [`TreeSitterExtractor`] from the default

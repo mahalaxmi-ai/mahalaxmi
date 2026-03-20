@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Symbol classification, visibility, and extracted symbol representation.
 //!
 //! These types capture the results of tree-sitter AST analysis: what symbols

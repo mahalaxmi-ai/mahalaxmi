@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! File-based singleton lock to prevent multiple application instances.
 //!
 //! Uses a PID file with advisory locking. On startup, the application

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Codebase indexing, symbol extraction, and repo map generation for Mahalaxmi.
 //!
 //! This crate provides the foundation for intelligent context preparation.

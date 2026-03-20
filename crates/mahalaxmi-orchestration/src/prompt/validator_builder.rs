@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Validator prompt builder — assembles the prompt for post-cycle requirement validation.
 //!
 //! After all workers complete, the validator agent holistically assesses whether

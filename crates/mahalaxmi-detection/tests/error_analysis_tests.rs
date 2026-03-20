@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use mahalaxmi_core::types::RootCauseCategory;
 use mahalaxmi_detection::errors::analysis::{
     analyze_errors, categorize_error, normalize_error_message,

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 14: Performance Tracking — metrics collection and comparison.
 
 use mahalaxmi_core::types::ProviderId;

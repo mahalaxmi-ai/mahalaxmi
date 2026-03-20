@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Credential storage backends for AI provider authentication.
 //!
 //! Provides a `CredentialStore` trait with multiple implementations:
@@ -52,11 +50,26 @@ fn credential_error(msg: String) -> MahalaxmiError {
 
 /// Application secret for credential encryption.
 ///
-/// Reads `MAHALAXMI_APP_SECRET` env var or falls back to the compile-time default,
-/// mirroring `mahalaxmi-licensing/src/signing/key.rs`.
+/// Returns `MAHALAXMI_APP_SECRET` env var when set.  Otherwise derives a
+/// machine-unique value from hostname + OS + username via SHA-256 — no
+/// hardcoded fallback string is embedded in the binary.
 fn credential_app_secret() -> String {
-    std::env::var("MAHALAXMI_APP_SECRET")
-        .unwrap_or_else(|_| "mahalaxmi-terminal-orchestration-v1".to_string())
+    std::env::var("MAHALAXMI_APP_SECRET").unwrap_or_else(|_| {
+        let hostname = std::env::var("COMPUTERNAME")
+            .or_else(|_| std::env::var("HOSTNAME"))
+            .unwrap_or_else(|_| "localhost".to_owned());
+        let user = std::env::var("USER")
+            .or_else(|_| std::env::var("USERNAME"))
+            .unwrap_or_else(|_| "user".to_owned());
+        let mut h = Sha256::new();
+        h.update(b"mahalaxmi:app-secret:v1:");
+        h.update(std::env::consts::OS.as_bytes());
+        h.update(b"::");
+        h.update(hostname.as_bytes());
+        h.update(b"::");
+        h.update(user.as_bytes());
+        h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+    })
 }
 
 /// Current OS username for per-user key derivation.
@@ -711,8 +724,8 @@ impl ChainedCredentialStore {
             );
             stores.push(Box::new(KeyringCredentialStore::with_persistence(data_dir)));
         } else {
-            tracing::info!(
-                "OS keyring unavailable — adding encrypted file credential store to chain"
+            tracing::debug!(
+                "OS keyring unavailable — using encrypted file credential store (expected on WSL2/headless)"
             );
             stores.push(Box::new(EncryptedFileCredentialStore::new(data_dir)));
         }

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Provider pricing model and token tracking types.
 //!
 //! Provides per-model cost data and utilities for estimating API call costs

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for Step 11: Tier 1 Provider definitions.
 
 use mahalaxmi_providers::tier1::*;

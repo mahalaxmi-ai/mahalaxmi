@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Language configuration for Tree-sitter grammars and query patterns.
 //!
 //! Each [`LanguageConfig`] bundles a Tree-sitter grammar with the S-expression

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Agent specifications and performance tracking.
 //!
 //! Defines reusable agent identities (specialist personas) that can be assigned

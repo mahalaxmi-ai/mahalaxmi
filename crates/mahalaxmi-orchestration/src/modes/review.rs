@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Review mode driver.
 //!
 //! After each worker batch completes, a single review manager reads the batch

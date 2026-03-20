@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! PTY terminal management for Mahalaxmi.
 //!
 //! Handles pseudo-terminal spawning, stream I/O, and VT parsing.
@@ -13,7 +11,9 @@ pub mod spawner;
 pub mod terminal;
 pub mod vt_cleaner;
 
-pub use buffer::{OutputBuffer, DEFAULT_RAW_REPLAY_CAPACITY_BYTES};
+pub use buffer::{OutputBuffer, RAW_REPLAY_BUFFER_BYTES};
+#[allow(deprecated)]
+pub use buffer::DEFAULT_RAW_REPLAY_CAPACITY_BYTES;
 pub use events::TerminalEvent;
 pub use session::TerminalSessionManager;
 pub use spawner::PtySpawner;

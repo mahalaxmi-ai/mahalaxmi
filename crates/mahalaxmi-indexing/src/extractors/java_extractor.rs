@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Java-specific symbol extractor.
 
 use crate::languages::{LanguageRegistry, SymbolExtractor, TreeSitterExtractor};

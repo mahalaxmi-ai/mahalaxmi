@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Query builder for filtering and ordering memory entries.
 
 use crate::entry::MemoryEntry;

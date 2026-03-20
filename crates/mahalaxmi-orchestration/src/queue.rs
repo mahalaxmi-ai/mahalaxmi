@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use chrono::Utc;
 use mahalaxmi_core::config::VerificationConfig;
 use mahalaxmi_core::error::MahalaxmiError;
@@ -162,6 +160,30 @@ impl WorkerQueue {
         Ok(())
     }
 
+    /// Mark a worker as completed unconditionally, bypassing the verification gate.
+    ///
+    /// Used for workers that produced no code changes (e.g. "task already done").
+    /// There is nothing to verify, so forcing `Completed` directly avoids a
+    /// permanent `Verifying` stall in the dispatch loop.
+    pub fn force_complete_worker(
+        &mut self,
+        worker_id: WorkerId,
+        i18n: &I18nService,
+    ) -> MahalaxmiResult<()> {
+        let worker = self.workers.get_mut(&worker_id).ok_or_else(|| {
+            MahalaxmiError::orchestration(
+                i18n,
+                keys::orchestration::WORKER_NOT_FOUND,
+                &[("worker_id", &worker_id.to_string())],
+            )
+        })?;
+        worker.status = WorkerStatus::Completed;
+        worker.finished_at = Some(Utc::now());
+        self.completed_tasks.insert(worker.task_id.clone());
+        self.resolve_blocked_workers();
+        Ok(())
+    }
+
     /// Run verification pipeline on the worker's output.
     ///
     /// - If verification passes: Verifying -> Completed (unblocks dependents)
@@ -262,15 +284,18 @@ impl WorkerQueue {
         };
 
         // Cascade: workers that are Blocked waiting on this task can never
-        // proceed — mark them Failed so the cycle can complete instead of
+        // proceed — mark them Skipped so the cycle can complete instead of
         // hanging with all_workers_finished() returning false indefinitely.
-        self.cascade_fail_blocked_dependents(&failed_task_id);
+        self.cascade_skip_dependents(&failed_task_id);
         Ok(())
     }
 
-    /// Recursively mark Blocked workers as Failed when a required dependency
-    /// has failed and can never be added to `completed_tasks`.
-    fn cascade_fail_blocked_dependents(&mut self, failed_task_id: &TaskId) {
+    /// Recursively mark Blocked workers as Skipped when a required dependency
+    /// has permanently failed and can never be added to `completed_tasks`.
+    ///
+    /// Returns the list of `(WorkerId, TaskId)` for every worker that was
+    /// transitioned to `Skipped`, so callers can emit events for each one.
+    pub fn cascade_skip_dependents(&mut self, failed_task_id: &TaskId) -> Vec<(WorkerId, TaskId)> {
         let now = Utc::now();
         // Collect IDs and their task_ids in one pass to avoid borrow conflict.
         let dependents: Vec<(WorkerId, TaskId)> = self
@@ -282,14 +307,18 @@ impl WorkerQueue {
             .map(|w| (w.worker_id, w.task_id.clone()))
             .collect();
 
+        let mut skipped = Vec::new();
         for (dep_id, dep_task_id) in dependents {
             if let Some(w) = self.workers.get_mut(&dep_id) {
-                w.status = WorkerStatus::Failed;
+                w.status = WorkerStatus::Skipped;
                 w.finished_at = Some(now);
             }
-            // Recurse so grandchild dependents also fail.
-            self.cascade_fail_blocked_dependents(&dep_task_id);
+            skipped.push((dep_id, dep_task_id.clone()));
+            // Recurse so grandchild dependents are also skipped.
+            let children = self.cascade_skip_dependents(&dep_task_id);
+            skipped.extend(children);
         }
+        skipped
     }
 
     /// Retry a failed worker (reset to Pending if retries remain).
@@ -351,6 +380,7 @@ impl WorkerQueue {
                 WorkerStatus::Blocked => stats.blocked += 1,
                 WorkerStatus::Verifying => stats.verifying += 1,
                 WorkerStatus::Failed => stats.failed += 1,
+                WorkerStatus::Skipped => stats.skipped += 1,
             }
         }
         stats
@@ -474,5 +504,57 @@ impl WorkerQueue {
                 worker.status = WorkerStatus::Pending;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use mahalaxmi_core::config::VerificationConfig;
+    use mahalaxmi_core::types::{TaskId, WorkerId};
+
+    /// Build a minimal two-worker plan: worker-1 (task-A, no deps) and
+    /// worker-2 (task-B, depends on task-A). Permanently fail worker-1 via
+    /// `fail_worker` and verify worker-2 transitions to Skipped, not Blocked.
+    #[test]
+    fn failed_worker_causes_dependent_to_be_skipped() {
+        let w1 = WorkerId::new(1);
+        let w2 = WorkerId::new(2);
+        let task_a = TaskId::new("task-A");
+        let task_b = TaskId::new("task-B");
+
+        let mut queue = WorkerQueue {
+            workers: {
+                let mut m = HashMap::new();
+                m.insert(
+                    w1,
+                    QueuedWorker::new(w1, task_a.clone(), vec![], 2),
+                );
+                let mut dep_worker = QueuedWorker::new(w2, task_b.clone(), vec![task_a.clone()], 2);
+                dep_worker.status = WorkerStatus::Blocked;
+                m.insert(w2, dep_worker);
+                m
+            },
+            completed_tasks: HashSet::new(),
+            max_concurrent: 4,
+            max_retries: 2,
+            verification_config: VerificationConfig { enabled: false, ..Default::default() },
+        };
+
+        let i18n = I18nService::new(mahalaxmi_core::i18n::SupportedLocale::EnUs);
+        queue.fail_worker(w1, &i18n).expect("fail_worker should succeed");
+
+        let w2_status = queue.get_worker(&w2).unwrap().status;
+        assert_eq!(
+            w2_status,
+            WorkerStatus::Skipped,
+            "dependent of a failed worker must be Skipped, not {:?}",
+            w2_status
+        );
+
+        // The queue must now report as finished (no blocked/pending/active).
+        let stats = queue.statistics();
+        assert_eq!(stats.blocked, 0, "no workers should remain Blocked");
+        assert_eq!(stats.skipped, 1, "one worker should be Skipped");
     }
 }

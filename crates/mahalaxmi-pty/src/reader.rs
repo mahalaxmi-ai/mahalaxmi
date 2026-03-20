@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use bytes::Bytes;
 use mahalaxmi_core::types::TerminalId;
 use std::io::Read;

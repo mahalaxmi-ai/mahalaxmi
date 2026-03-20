@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Carry-forward queue for failed tasks across orchestration cycles.
 //!
 //! When a worker task fails permanently (exhausting its retry budget), it is

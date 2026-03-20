@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Consensus engine for merging multiple manager proposals.
 //!
 //! Implements four strategies: Union, Intersection, WeightedVoting,
@@ -34,6 +32,7 @@ pub mod weighted;
 
 pub use arbitrator::ArbitrationConfig;
 pub use engine::ConsensusEngine;
+pub use mahalaxmi_core::domain::ConsensusAlgorithm;
 pub use normalizer::{group_matching_tasks, TaskGroup};
 pub use similarity::SimilarityWeights;
 pub use strategy::ConsensusStrategyImpl;

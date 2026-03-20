@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cross-provider build_command() validation tests.
 
 use std::path::Path;

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Full registry validation tests.
 
 use mahalaxmi_providers::tier1;

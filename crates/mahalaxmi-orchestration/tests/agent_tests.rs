@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for AgentSpec, AgentRegistry, and agent-spec prompt integration.
 
 use mahalaxmi_orchestration::agent::{AgentRecord, AgentRegistry, AgentSpec};
@@ -38,6 +36,7 @@ fn base_worker_config() -> WorkerPromptConfig {
         context_router_config: None,
         codebase_index: None,
         last_cycle_report: None,
+        domain: None,
     }
 }
 

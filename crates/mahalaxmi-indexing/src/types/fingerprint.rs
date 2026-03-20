@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! File fingerprinting for incremental index updates.
 //!
 //! A [`FileFingerprint`] captures the content hash, size, modification time,

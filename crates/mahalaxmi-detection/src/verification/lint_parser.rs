@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Lint output parser for multiple lint tools.
 //!
 //! Parses structured and semi-structured output from popular lint tools

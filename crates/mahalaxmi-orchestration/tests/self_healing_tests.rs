@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Tests for relaxed correctness / self-healing (P7).
 
 use mahalaxmi_core::config::VerificationConfig;
@@ -36,6 +34,7 @@ fn test_config() -> CycleConfig {
         git_pr_platform: mahalaxmi_core::types::GitPrPlatform::GitHub,
         enable_validation: false,
         validator_provider_id: None,
+        active_domain: None,
     }
 }
 

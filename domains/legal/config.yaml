@@ -1,0 +1,47 @@
+id: legal
+description: >-
+  Multi-agent legal document analysis. Document sections are reviewed in
+  parallel by specialist workers. Manager synthesizes into a structured review.
+manager_uncapped:
+  file: manager.prompt
+manager_capped:
+  file: manager.prompt
+worker_system_role:
+  file: worker.prompt
+decomposition_strategy:
+  section_based:
+    max_section_tokens: 4000
+    overlap_tokens: 200
+consensus_algorithm:
+  synthesis:
+    synthesis_prompt: >-
+      You are a senior legal analyst. Synthesize the section analyses into a
+      comprehensive document review covering: key obligations of each party,
+      risk areas and unfavorable terms, unusual or non-standard clauses,
+      missing standard protections for this contract type, and recommended
+      negotiation points with suggested alternative language.
+output_format:
+  structured_report:
+    sections:
+      - Executive Summary
+      - Key Obligations
+      - Risk Areas
+      - Unusual Clauses
+      - Missing Protections
+      - Negotiation Recommendations
+    output_file: legal-analysis.md
+input_format:
+  document_file:
+    accepted_types:
+      - pdf
+      - docx
+      - txt
+    max_file_size_mb: 100
+domain_tags:
+  - legal
+  - contract
+  - document-analysis
+constraint_sections:
+  - name: Legal Standards
+    source:
+      file: constraints/legal_standards.prompt

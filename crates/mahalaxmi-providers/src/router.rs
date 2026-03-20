@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Task router — assigns tasks to the optimal AI provider based on capabilities.
 //!
 //! The `TaskRouter` evaluates all registered providers against a task's requirements

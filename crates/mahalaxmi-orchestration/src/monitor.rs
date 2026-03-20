@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Stream monitor — bridges PTY terminal output to detection rules and orchestration actions.
 //!
 //! The `StreamMonitor` tracks terminal-to-worker assignments and evaluates

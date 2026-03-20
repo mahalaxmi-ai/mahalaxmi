@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Cross-agent shared memory for Mahalaxmi.
 //!
 //! This crate provides an inter-worker knowledge-sharing system for orchestration cycles.

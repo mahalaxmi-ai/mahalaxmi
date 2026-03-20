@@ -1,0 +1,22 @@
+id: content
+description: >-
+  Multi-agent content review and editing. Multiple reviewers assess from
+  different lenses simultaneously. Manager synthesizes editorial recommendations.
+manager_uncapped:
+  file: manager.prompt
+manager_capped:
+  file: manager.prompt
+worker_system_role:
+  file: worker.prompt
+decomposition_strategy: manager_defined
+consensus_algorithm:
+  majority:
+    threshold: 0.67
+output_format:
+  markdown_file:
+    output_file: content-review.md
+input_format: codebase
+domain_tags:
+  - content
+  - editing
+  - review

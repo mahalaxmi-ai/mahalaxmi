@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Code chunking for intelligent context preparation.
 //!
 //! Splits file content into chunks that fit within token budgets,

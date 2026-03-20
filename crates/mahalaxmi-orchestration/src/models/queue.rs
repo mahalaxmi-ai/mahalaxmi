@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 use chrono::{DateTime, Utc};
 use mahalaxmi_core::types::{ProviderId, TaskId, WorkerId, WorkerStatus};
 use mahalaxmi_providers::cost::TokenUsage;
@@ -141,6 +139,8 @@ pub struct QueueStatistics {
     pub verifying: u32,
     /// Workers that have failed.
     pub failed: u32,
+    /// Workers skipped because a dependency permanently failed.
+    pub skipped: u32,
 }
 
 impl QueueStatistics {

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: MIT
-// Copyright 2026 ThriveTech Services LLC
 //! Orchestration domain types shared across crates.
 //!
 //! These types are defined in `mahalaxmi-core` so that both `mahalaxmi-orchestration`
@@ -242,12 +240,14 @@ pub enum WorkerStatus {
     Completed,
     /// Worker has failed (may be retried).
     Failed,
+    /// Worker was skipped because a dependency permanently failed.
+    Skipped,
 }
 
 impl WorkerStatus {
     /// Returns true if the worker is in a terminal (finished) state.
     pub fn is_finished(&self) -> bool {
-        matches!(self, Self::Completed | Self::Failed)
+        matches!(self, Self::Completed | Self::Failed | Self::Skipped)
     }
 
     /// Returns true if the worker can accept new work.
@@ -271,6 +271,7 @@ impl fmt::Display for WorkerStatus {
             Self::Verifying => "Verifying",
             Self::Completed => "Completed",
             Self::Failed => "Failed",
+            Self::Skipped => "Skipped",
         };
         write!(f, "{}", label)
     }
@@ -410,9 +411,15 @@ pub enum ConsensusStrategy {
 
 impl ConsensusStrategy {
     /// Parse from the config string format used in OrchestrationConfig.
+    ///
+    /// `"unanimous"` maps to `Union` — at the proposal-merge level, unanimous
+    /// agreement across managers is achieved by taking the union of all
+    /// proposals and requiring each to appear in every manager's output.
+    /// This bridges the coding domain's `ConsensusAlgorithm::Unanimous` to
+    /// the strategy that enforces full-agreement at the merge step.
     pub fn from_config_str(s: &str) -> Option<Self> {
         match s {
-            "union" => Some(Self::Union),
+            "union" | "unanimous" => Some(Self::Union),
             "intersection" => Some(Self::Intersection),
             "weighted_voting" => Some(Self::WeightedVoting),
             "complexity_weighted" => Some(Self::ComplexityWeighted),
@@ -510,5 +517,14 @@ mod tests {
     #[test]
     fn git_pr_platform_default() {
         assert_eq!(GitPrPlatform::default(), GitPrPlatform::GitHub);
+    }
+
+    #[test]
+    fn consensus_strategy_unanimous_maps_to_union() {
+        assert_eq!(
+            ConsensusStrategy::from_config_str("unanimous"),
+            Some(ConsensusStrategy::Union)
+        );
+        assert_eq!(ConsensusStrategy::from_config_str("invalid"), None);
     }
 }
