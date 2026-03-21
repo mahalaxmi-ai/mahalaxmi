@@ -1,0 +1,69 @@
+name: Specification Feedback
+description: Submit feedback on an MFOP specification document — translation accuracy, technical corrections, or clarity improvements.
+title: "[Spec Feedback] <section> — <brief description>"
+labels: ["spec-feedback"]
+body:
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      description: Which language version are you reviewing?
+      options:
+        - English (en-US)
+        - Español (es-ES)
+        - Français (fr-FR)
+        - Deutsch (de-DE)
+        - हिन्दी (hi-IN)
+        - 日本語 (ja-JP)
+        - 한국어 (ko-KR)
+        - Português (pt-BR)
+        - 中文 (zh-CN)
+        - العربية (ar-SA)
+    validations:
+      required: true
+
+  - type: input
+    id: section
+    attributes:
+      label: Section
+      description: Section number or title (e.g. "Section 5.2 — Routing Algorithm" or "Appendix B")
+      placeholder: e.g. Section 7.2 — Signature Scheme
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feedback_type
+    attributes:
+      label: Feedback Type
+      options:
+        - Technical error — the specification is incorrect
+        - Translation accuracy — the translation does not match the English source
+        - Clarity — the text is unclear or ambiguous
+        - Completeness — something is missing
+        - Terminology — term is non-standard or inconsistent
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: current_text
+    attributes:
+      label: Current Text
+      description: Quote the relevant passage from the document.
+      placeholder: Paste the text you are commenting on.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Correction or Comment
+      description: What should it say, or what is your question/observation?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Optional — references, related sections, or background that supports your feedback.
