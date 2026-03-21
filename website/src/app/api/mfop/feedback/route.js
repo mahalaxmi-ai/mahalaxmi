@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { mfopSections, mfopMeta } from '@/lib/mfopSpec';
 
-const RECIPIENT = 'Ami.nunez@mahalaxmi.ai';
+const RECIPIENT = 'support@mahalaxmi.ai';
 
 function buildEmailBody({ name, email, section, type, comment }) {
   const sectionLabel = section
