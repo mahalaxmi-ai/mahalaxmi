@@ -25,6 +25,7 @@ const navLinks = [
   { label: 'Products', href: '/products' },
   { label: 'Open Source', href: '/open-source' },
   { label: 'Docs', href: '/docs' },
+  { label: 'Protocol', href: '/mfop' },
 ];
 
 export default function Navbar() {

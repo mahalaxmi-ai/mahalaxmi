@@ -26,25 +26,25 @@ Submitted via https://mahalaxmi.ai/mfop/draft
 `.trim();
 }
 
-// To enable email delivery, install nodemailer (`npm install nodemailer`)
-// and uncomment the function below, then update the POST handler to call it.
-//
-// async function sendViaNodemailer(payload) {
-//   const nodemailer = require('nodemailer');
-//   const transport = nodemailer.createTransport({
-//     host: process.env.SMTP_HOST,
-//     port: parseInt(process.env.SMTP_PORT ?? '587', 10),
-//     secure: process.env.SMTP_SECURE === 'true',
-//     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-//   });
-//   await transport.sendMail({
-//     from: `"MFOP Review" <${process.env.SMTP_FROM ?? process.env.SMTP_USER}>`,
-//     to: RECIPIENT,
-//     replyTo: `${payload.name} <${payload.email}>`,
-//     subject: `[MFOP Peer Review] ${payload.type} — ${payload.section || 'General'}`,
-//     text: buildEmailBody(payload),
-//   });
-// }
+async function sendViaNodemailer(payload) {
+  const nodemailer = require('nodemailer');
+  const transport = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT ?? '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  });
+  const from = process.env.EMAIL_FROM_NAME
+    ? `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM ?? process.env.SMTP_USER}>`
+    : (process.env.EMAIL_FROM ?? process.env.SMTP_USER);
+  await transport.sendMail({
+    from,
+    to: RECIPIENT,
+    replyTo: `${payload.name} <${payload.email}>`,
+    subject: `[MFOP Peer Review] ${payload.type} — ${payload.section || 'General'}`,
+    text: buildEmailBody(payload),
+  });
+}
 
 export async function POST(request) {
   let body;
@@ -71,10 +71,12 @@ export async function POST(request) {
     comment: String(comment).slice(0, 10000),
   };
 
-  // Log feedback to server output.
-  // Replace this block with a call to sendViaNodemailer() (see above) once
-  // SMTP credentials are configured and nodemailer is installed.
-  console.log('[mfop/feedback] Feedback received:\n', buildEmailBody(payload));
+  try {
+    await sendViaNodemailer(payload);
+  } catch (err) {
+    console.error('[mfop/feedback] Failed to send email:', err);
+    return NextResponse.json({ error: 'Failed to send feedback. Please try again.' }, { status: 502 });
+  }
 
   return NextResponse.json({ success: true });
 }
