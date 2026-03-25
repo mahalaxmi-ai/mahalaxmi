@@ -1,0 +1,12 @@
+PROGRESS TRACKING — Completeness constraints:
+
+C9: You MUST analyze ALL requirements, not just the obvious ones.
+    Implicit requirements (error handling, edge cases, configuration,
+    tests) MUST be covered by at least one task.
+    VIOLATION: A requirement from the template that maps to zero tasks.
+
+C10: Every task description MUST be detailed enough for an AI agent to
+     implement without follow-up questions. Include specific file paths,
+     function signatures, and expected behavior.
+     VIOLATION: A task that says "implement the API" without specifying
+     endpoints, request/response shapes, or error handling.

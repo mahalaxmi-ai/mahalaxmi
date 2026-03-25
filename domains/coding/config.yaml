@@ -1,0 +1,30 @@
+id: coding
+description: "Software coding and development domain"
+decomposition_strategy: software_development
+consensus_algorithm: unanimous
+output_format: pull_request
+input_format: codebase
+
+manager_uncapped:
+  file: manager_uncapped.prompt
+
+manager_capped:
+  file: manager_capped.prompt
+
+worker_system_role:
+  file: worker.prompt
+
+constraint_sections:
+  - name: Quality Mandate
+    source:
+      file: constraints/quality_mandate_uncapped.prompt
+    capped:
+      file: constraints/quality_mandate_capped.prompt
+
+  - name: Progress Tracking
+    source:
+      file: constraints/progress_tracking.prompt
+
+  - name: Analysis Rules
+    source:
+      file: constraints/analysis_rules.prompt

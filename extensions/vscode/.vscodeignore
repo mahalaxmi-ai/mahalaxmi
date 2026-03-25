@@ -1,0 +1,9 @@
+src/**
+node_modules/**
+__mocks__/**
+*.vsix
+esbuild.js
+tsconfig.json
+vitest.config.ts
+package-lock.json
+.vscode/**

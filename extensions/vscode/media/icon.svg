@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+  <!-- Ears (rendered behind head) -->
+  <ellipse cx="4" cy="13" rx="4" ry="5" />
+  <ellipse cx="20" cy="13" rx="4" ry="5" />
+  <!-- Head / face -->
+  <ellipse cx="12" cy="14" rx="6" ry="7" />
+  <!-- Crown: three upward points sitting above head -->
+  <path d="M7.5 7 L9 2 L10.5 7 L12 2 L13.5 7 L15 2 L16.5 7 Z" />
+  <!-- Trunk: rounded shape hanging below head -->
+  <path d="M10 21 C9 22.5 9 24 12 24 C15 24 15 22.5 14 21 Z" />
+</svg>

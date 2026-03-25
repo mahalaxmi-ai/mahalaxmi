@@ -1,0 +1,65 @@
+Mahalaxmi Terminal Orchestration
+Copyright 2026 ThriveTech Services LLC. All rights reserved.
+
+Mahalaxmi™ is a trademark of ThriveTech Services LLC,
+registered in the United States and other countries.
+
+The Mahalaxmi name and logo may not be used to endorse, promote,
+or identify products derived from this software without prior
+written permission from ThriveTech Services LLC.
+
+This repository contains the open source foundation layer of
+Mahalaxmi, licensed under the MIT License. The full Mahalaxmi
+product is proprietary software available at https://mahalaxmi.ai
+
+-------------------------------------------------------------------------------
+Third-Party Notices
+-------------------------------------------------------------------------------
+
+This software includes the following third-party components, each governed by
+their respective licenses as listed below.
+
+aes-gcm         MIT / Apache-2.0   https://github.com/RustCrypto/AEADs
+async-trait     MIT / Apache-2.0   https://github.com/dtolnay/async-trait
+base64          MIT / Apache-2.0   https://github.com/marshallpierce/rust-base64
+bytes           MIT                https://github.com/tokio-rs/bytes
+chrono          MIT / Apache-2.0   https://github.com/chronotope/chrono
+clap            MIT / Apache-2.0   https://github.com/clap-rs/clap
+dirs            MIT / Apache-2.0   https://github.com/dirs-dev/dirs-rs
+fluent-bundle   Apache-2.0         https://github.com/projectfluent/fluent-rs
+futures-util    MIT / Apache-2.0   https://github.com/rust-lang/futures-rs
+hmac            MIT / Apache-2.0   https://github.com/RustCrypto/MACs
+hostname        MIT                https://github.com/svartalf/hostname
+keyring         MIT / Apache-2.0   https://github.com/hwchen/keyring-rs
+petgraph        MIT / Apache-2.0   https://github.com/petgraph/petgraph
+portable-pty    MIT                https://github.com/wezterm/wezterm
+rand            MIT / Apache-2.0   https://github.com/rust-random/rand
+regex           MIT / Apache-2.0   https://github.com/rust-lang/regex
+reqwest         MIT / Apache-2.0   https://github.com/seanmonstar/reqwest
+rusqlite        MIT                https://github.com/rusqlite/rusqlite
+secrecy         MIT / Apache-2.0   https://github.com/iqlusioninc/secrecy
+serde           MIT / Apache-2.0   https://github.com/serde-rs/serde
+serde_json      MIT / Apache-2.0   https://github.com/serde-rs/json
+sha2            MIT / Apache-2.0   https://github.com/RustCrypto/hashes
+tempfile        MIT / Apache-2.0   https://github.com/Stebalien/tempfile
+thiserror       MIT / Apache-2.0   https://github.com/dtolnay/thiserror
+tokio           MIT                https://github.com/tokio-rs/tokio
+tokio-util      MIT                https://github.com/tokio-rs/tokio
+toml            MIT / Apache-2.0   https://github.com/toml-rs/toml
+tracing         MIT                https://github.com/tokio-rs/tracing
+tracing-subscriber MIT             https://github.com/tokio-rs/tracing
+tree-sitter     MIT                https://github.com/tree-sitter/tree-sitter
+tree-sitter-c   MIT                https://github.com/tree-sitter/tree-sitter-c
+tree-sitter-cpp MIT                https://github.com/tree-sitter/tree-sitter-cpp
+tree-sitter-go  MIT                https://github.com/tree-sitter/tree-sitter-go
+tree-sitter-java MIT               https://github.com/tree-sitter/tree-sitter-java
+tree-sitter-python MIT             https://github.com/tree-sitter/tree-sitter-python
+tree-sitter-rust MIT               https://github.com/tree-sitter/tree-sitter-rust
+tree-sitter-typescript MIT         https://github.com/tree-sitter/tree-sitter-typescript
+uuid            MIT / Apache-2.0   https://github.com/uuid-rs/uuid
+vte             MIT / Apache-2.0   https://github.com/alacritty/vte
+zeroize         MIT / Apache-2.0   https://github.com/iqlusioninc/zeroize
+
+Full license texts for all dependencies are available via:
+  cargo license --all-features
+or at https://deps.rs/repo/github/mahalaxmi-ai/mahalaxmi

@@ -1,0 +1,39 @@
+[package]
+name = "mahalaxmi-orchestration"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Orchestration engine for Mahalaxmi"
+
+[dependencies]
+mahalaxmi-core = { path = "../mahalaxmi-core" }
+mahalaxmi-detection = { path = "../mahalaxmi-detection" }
+mahalaxmi-providers = { path = "../mahalaxmi-providers" }
+mahalaxmi-memory = { path = "../mahalaxmi-memory", optional = true }
+mahalaxmi-indexing = { path = "../mahalaxmi-indexing", optional = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+regex = { workspace = true }
+sha2 = { workspace = true }
+pdf-extract = { version = "0.10", optional = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+mockito = "1"
+toml = { workspace = true }
+
+[features]
+default = ["context", "document-input"]
+context = ["dep:mahalaxmi-memory", "dep:mahalaxmi-indexing"]
+document-input = ["dep:pdf-extract"]
+# living-skills feature is a stub in the OSS build; the mahalaxmi-skills crate
+# is a proprietary add-on available in the commercial distribution.
+living-skills = []

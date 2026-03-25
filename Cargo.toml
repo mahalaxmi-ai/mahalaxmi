@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/mahalaxmi-core",
+    "crates/mahalaxmi-pty",
+    "crates/mahalaxmi-providers",
+    "crates/mahalaxmi-orchestration",
+    "crates/mahalaxmi-detection",
+    "crates/mahalaxmi-memory",
+    "crates/mahalaxmi-indexing",
+    "crates/mahalaxmi-cli",
+    "examples",
+    "integration-tests",
+]
+
+[workspace.package]
+version = "100.0.0"
+edition = "2021"
+license = "MIT"
+authors = ["ThriveTech Services LLC"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+rust-i18n = "3"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+async-trait = "0.1"
+secrecy = { version = "0.10", features = ["serde"] }
+regex = "1"
+portable-pty = "0.9"
+vte = "0.15"
+bytes = "1"
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+tree-sitter = "0.25"
+tree-sitter-rust = "0.24"
+tree-sitter-typescript = "0.23"
+tree-sitter-python = "0.25"
+tree-sitter-go = "0.25"
+tree-sitter-java = "0.23"
+tree-sitter-c = "0.24"
+tree-sitter-cpp = "0.23"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+rand = "0.8"
+hostname = "0.4"
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+tempfile = "3"
+petgraph = "0.6"
+aes-gcm = "0.10"
+futures-util = "0.3"

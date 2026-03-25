@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: MIT
+# CI pipeline — runs on every push to main/integration and on all PRs targeting main.
+# Requires a self-hosted runner registered with labels: self-hosted, hetzner
+
+name: CI
+
+on:
+  push:
+    branches: [main, integration]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Build · Test · Lint · Audit
+    runs-on: [self-hosted, hetzner]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Toolchain ────────────────────────────────────────────────────────────
+      - name: Install Rust stable + clippy
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      # ── Build ─────────────────────────────────────────────────────────────────
+      - name: Build workspace
+        run: cargo build --workspace --locked
+
+      # ── Unit + integration tests ──────────────────────────────────────────────
+      - name: Run all tests
+        run: cargo test --workspace --locked -- --test-threads=$(nproc)
+        env:
+          MAHALAXMI_PAK: ${{ secrets.MAHALAXMI_PAK }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # ── Lint ──────────────────────────────────────────────────────────────────
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace --locked -- -D warnings
+
+      # ── Security audit ────────────────────────────────────────────────────────
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --quiet
+
+      - name: Security audit
+        run: cargo audit
+
+      # ── Disk cleanup (keep 100 GB volume healthy) ─────────────────────────────
+      - name: Clean old build artifacts
+        if: always()
+        run: |
+          # Remove incremental artifacts and .d files older than 7 days
+          find target -name "*.d" -mtime +7 -delete 2>/dev/null || true
+          find target/debug/incremental -mindepth 1 -maxdepth 1 -mtime +7 \
+            -exec rm -rf {} + 2>/dev/null || true
+          # Purge cargo registry cache entries older than 7 days
+          find ~/.cargo/registry/cache -mindepth 2 -maxdepth 2 -mtime +7 \
+            -exec rm -rf {} + 2>/dev/null || true
+          df -h .

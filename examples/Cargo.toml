@@ -1,0 +1,77 @@
+[package]
+name = "mahalaxmi-examples"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish = false
+
+[dependencies]
+mahalaxmi-core = { path = "../crates/mahalaxmi-core" }
+mahalaxmi-pty = { path = "../crates/mahalaxmi-pty" }
+mahalaxmi-providers = { path = "../crates/mahalaxmi-providers" }
+mahalaxmi-orchestration = { path = "../crates/mahalaxmi-orchestration" }
+mahalaxmi-detection = { path = "../crates/mahalaxmi-detection" }
+mahalaxmi-indexing = { path = "../crates/mahalaxmi-indexing" }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+reqwest = { workspace = true }
+futures-util = { workspace = true }
+
+[[example]]
+name = "core-config-loading"
+path = "core/01-config-loading.rs"
+
+[[example]]
+name = "core-logging-setup"
+path = "core/02-logging-setup.rs"
+
+[[example]]
+name = "pty-spawn-process"
+path = "pty/01-spawn-process.rs"
+
+[[example]]
+name = "pty-stream-output"
+path = "pty/02-stream-output.rs"
+
+[[example]]
+name = "orchestration-dag-types"
+path = "orchestration/01-dag-types.rs"
+
+[[example]]
+name = "orchestration-worker-queue"
+path = "orchestration/02-worker-queue.rs"
+
+[[example]]
+name = "detection-basic"
+path = "detection/01-basic-detection.rs"
+
+[[example]]
+name = "detection-custom-rules"
+path = "detection/02-custom-rules.rs"
+
+[[example]]
+name = "providers-implement-provider"
+path = "providers/01-implement-provider.rs"
+
+[[example]]
+name = "providers-claude-code-stub"
+path = "providers/02-claude-code-stub.rs"
+
+[[example]]
+name = "providers-custom-cli"
+path = "providers/03-custom-cli-provider.rs"
+
+[[example]]
+name = "indexing-parse-repository"
+path = "indexing/01-parse-repository.rs"
+
+[[example]]
+name = "indexing-symbol-extraction"
+path = "indexing/02-symbol-extraction.rs"
+
+[[example]]
+name = "cli-connect"
+path = "cli/01-connect-to-instance.rs"

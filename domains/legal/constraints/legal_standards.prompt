@@ -1,0 +1,87 @@
+LEGAL ANALYSIS STANDARDS
+
+CONTRACT LAW PRINCIPLES
+Apply the following foundational contract law principles when assessing each clause:
+  - Offer, acceptance, and consideration: verify the agreement reflects mutual assent and
+    that each party's obligations are supported by consideration.
+  - Good faith and fair dealing: flag clauses that appear to allow one party to act in bad
+    faith or that eliminate the implied covenant of good faith common in most jurisdictions.
+  - Duty to mitigate: note if the agreement purports to waive or limit the duty to mitigate
+    damages, which courts may not enforce.
+  - Parol evidence rule: for contracts with an integration clause, flag any representations
+    or warranties that exist only outside the four corners of the document, as they may be
+    unenforceable.
+  - Unconscionability: flag terms that are so one-sided as to be potentially unenforceable,
+    particularly in contracts of adhesion.
+
+STANDARD CLAUSE EXPECTATIONS BY CONTRACT TYPE
+
+NDA (Non-Disclosure Agreement):
+  - Mutual vs. unilateral structure: note which party bears confidentiality obligations and
+    whether the structure is appropriate for the commercial relationship.
+  - Scope limitations: the definition of Confidential Information should exclude information
+    that is publicly known, independently developed, or received from a third party without
+    restriction.
+  - Permitted disclosures: legal compulsion carve-out (court order, regulatory demand) should
+    be present with prior notice requirement to the disclosing party.
+  - Survival period: confidentiality obligations should survive termination for a defined
+    period (typically 2–5 years); perpetual obligations for trade secrets are market standard.
+  - Return or destruction of materials upon termination should be addressed.
+
+SaaS Agreement:
+  - SLA commitments: uptime guarantee (typically 99.5–99.99%), measurement methodology,
+    and service credits for downtime should be specified.
+  - Data processing terms: if personal data is processed, a Data Processing Agreement (DPA)
+    or equivalent GDPR-compliant terms should be present or incorporated by reference.
+  - Liability caps: caps on direct damages (typically 12 months of fees) and exclusion of
+    consequential damages are standard; absence of a cap is a High severity risk.
+  - Data portability and deletion: customer's right to export data and obligation to delete
+    upon termination should be addressed.
+  - Security obligations: vendor security standards, breach notification timelines
+    (typically 72 hours for GDPR jurisdictions), and audit rights are expected.
+
+Employment Agreement:
+  - At-will vs. fixed term: clearly identify the employment type; at-will should include
+    notice period requirements for employer-initiated termination.
+  - IP assignment scope: work-for-hire and assignment clauses should be limited to work
+    performed in scope of employment; overly broad clauses purporting to capture personal
+    projects outside work hours are often unenforceable and should be flagged.
+  - Non-compete enforceability: assess against governing law — many jurisdictions (California,
+    UK, EU member states) severely restrict or void non-compete clauses; flag if present.
+  - Non-solicitation: distinguish between customer and employee non-solicitation; evaluate
+    scope and duration against jurisdiction-specific enforceability standards.
+  - Severance: note if severance terms are present, absent, or contingent on release of claims.
+
+Vendor / Services Agreement:
+  - Delivery milestones: statements of work should include measurable deliverables with dates;
+    vague deliverables create acceptance risk.
+  - Acceptance testing: formal acceptance criteria and acceptance period (typically 30 days)
+    are market standard; absence creates risk of deemed acceptance or perpetual dispute.
+  - Warranties: express warranties on services (performed in professional workmanlike manner)
+    and deliverables (conform to specifications for defined warranty period) are expected.
+  - Indemnification flow-down: where vendor uses subcontractors, indemnification obligations
+    should flow down; absence creates exposure if a subcontractor causes harm.
+  - Change order process: mechanism for scope changes with pricing and timeline impact should
+    be defined to prevent scope creep disputes.
+
+JURISDICTION FLAGS
+  - Governing law clause: always identify the governing jurisdiction; flag if governing law
+    is in a jurisdiction known for buyer-unfavorable or seller-unfavorable defaults.
+  - Dispute resolution mechanism: arbitration clauses limit judicial remedies and should be
+    evaluated for: binding vs non-binding, seat of arbitration, governing rules (AAA, JAMS,
+    ICC, LCIA), and allocation of arbitration costs.
+  - Venue and forum selection: note whether venue selection is exclusive; flag if the chosen
+    venue is inconvenient or jurisdictionally surprising given the parties' locations.
+  - International considerations: if either party is located in the EU or processes EU personal
+    data, assess GDPR compliance requirements (lawful basis, DPA, SCCs for cross-border transfer).
+    If financial services are involved, note applicable regulatory frameworks (MiFID II, SOX).
+
+ANALYSIS QUALITY STANDARDS
+  - Cite clause numbers, not page numbers, wherever the document uses numbered clauses.
+    If the document uses only page references, cite page and paragraph.
+  - Quote key language verbatim for all High and Medium severity findings.
+  - Flag defined terms that materially expand a clause's scope beyond its surface reading.
+    Example: if "Affiliate" is defined to include any entity in which a party holds 5% equity,
+    an obligation that extends to Affiliates may be far broader than it appears.
+  - Do not cite a risk without concrete textual evidence from the document.
+  - When market standard comparison is made, name the standard being used as the benchmark.

@@ -1,0 +1,40 @@
+version: 2
+
+updates:
+  # Rust / Cargo — workspace-wide dependency updates
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 10
+    reviewers:
+      - mahalaxmi-ai
+    labels:
+      - dependencies
+      - rust
+    # Group all patch updates into a single PR to reduce noise
+    groups:
+      patch-updates:
+        update-types:
+          - patch
+      tree-sitter-grammars:
+        patterns:
+          - "tree-sitter*"
+
+  # GitHub Actions — keep workflow action versions current
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "08:00"
+      timezone: America/New_York
+    open-pull-requests-limit: 5
+    reviewers:
+      - mahalaxmi-ai
+    labels:
+      - dependencies
+      - github-actions

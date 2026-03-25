@@ -1,0 +1,186 @@
+{
+  "name": "mahalaxmi",
+  "displayName": "Mahalaxmi",
+  "l10n": "./l10n/bundle.l10n.json",
+  "description": "Mahalaxmi AI orchestration sidebar for VS Code",
+  "version": "0.2.2",
+  "publisher": "thrivetech",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "orchestration",
+    "multi-agent",
+    "claude",
+    "aider",
+    "coding",
+    "automation"
+  ],
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1b4b",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mahalaxmi-ai/mahalaxmi-terminal-automation"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onUri"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "mahalaxmi",
+          "title": "Mahalaxmi",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "mahalaxmi": [
+        {
+          "id": "mahalaxmi.sidebar",
+          "name": "Cycle Status"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Mahalaxmi",
+      "properties": {
+        "mahalaxmi.connectionMode": {
+          "type": "string",
+          "enum": [
+            "local",
+            "remote",
+            "cloud"
+          ],
+          "default": "local",
+          "enumDescriptions": [
+            "Local Tauri desktop app (ws://127.0.0.1:17420)",
+            "Remote mahalaxmi-service via REST API + SSE",
+            "Managed cloud VM via ThriveTech provisioning API"
+          ],
+          "description": "Which Mahalaxmi backend to connect to."
+        },
+        "mahalaxmi.remoteUrl": {
+          "type": "string",
+          "default": "https://localhost:17421",
+          "description": "HTTPS URL of the remote mahalaxmi-service. HTTP is automatically upgraded to HTTPS. Example: https://5.161.189.182:17421"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "mahalaxmi.startCycle",
+        "title": "Mahalaxmi: Start Cycle"
+      },
+      {
+        "command": "mahalaxmi.startCycleOnFolder",
+        "title": "Run Mahalaxmi Cycle Here"
+      },
+      {
+        "command": "mahalaxmi.stopCycle",
+        "title": "Mahalaxmi: Stop Cycle"
+      },
+      {
+        "command": "mahalaxmi.approvePlan",
+        "title": "Mahalaxmi: Approve Plan"
+      },
+      {
+        "command": "mahalaxmi.rejectPlan",
+        "title": "Mahalaxmi: Reject Plan"
+      },
+      {
+        "command": "mahalaxmi.stopChain",
+        "title": "Mahalaxmi: Stop Chain Mode"
+      },
+      {
+        "command": "mahalaxmi.acceptFile",
+        "title": "Mahalaxmi: Accept File"
+      },
+      {
+        "command": "mahalaxmi.rejectFile",
+        "title": "Mahalaxmi: Reject File"
+      },
+      {
+        "command": "mahalaxmi.configureRemote",
+        "title": "Mahalaxmi: Configure Remote Server"
+      },
+      {
+        "command": "mahalaxmi.switchToLocal",
+        "title": "Mahalaxmi: Switch to Local Mode"
+      },
+      {
+        "command": "mahalaxmi.configureServerCredentials",
+        "title": "Configure Server Credentials",
+        "category": "Mahalaxmi"
+      },
+      {
+        "command": "mahalaxmi.startCloudVm",
+        "title": "Mahalaxmi: Start Cloud VM"
+      },
+      {
+        "command": "mahalaxmi.stopCloudVm",
+        "title": "Mahalaxmi: Stop Cloud VM"
+      },
+      {
+        "command": "mahalaxmi.cloudStatus",
+        "title": "Mahalaxmi: Cloud VM Status"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "mahalaxmi.startCycleOnFolder",
+          "when": "explorerResourceIsFolder",
+          "group": "mahalaxmi@1"
+        },
+        {
+          "command": "mahalaxmi.acceptFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "mahalaxmi@2"
+        },
+        {
+          "command": "mahalaxmi.rejectFile",
+          "when": "!explorerResourceIsFolder",
+          "group": "mahalaxmi@3"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "mahalaxmi.acceptFile",
+          "group": "mahalaxmi@1"
+        },
+        {
+          "command": "mahalaxmi.rejectFile",
+          "group": "mahalaxmi@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --sourcemap",
+    "package": "node esbuild.js --minify && vsce package",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.0.0",
+    "@vscode/l10n": "^0.0.18",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.20.2",
+    "typescript": "^5.4.0",
+    "vitest": "^1.0.0",
+    "ws": "^8.0.0"
+  }
+}

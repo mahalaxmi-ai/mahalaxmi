@@ -1,0 +1,40 @@
+# CODEOWNERS — auto-assigns reviewers when files in these paths are changed.
+# Syntax: <path pattern>  <@user or @org/team>
+# Last matching rule wins.
+
+# Default — everything requires a maintainer review
+*                                           @mahalaxmi-ai
+
+# Core domain types and config
+/crates/mahalaxmi-core/                     @mahalaxmi-ai
+
+# PTY and terminal I/O (security-sensitive)
+/crates/mahalaxmi-pty/                      @mahalaxmi-ai
+
+# Consensus engine and orchestration logic
+/crates/mahalaxmi-orchestration/            @mahalaxmi-ai
+
+# Provider trait and implementations (primary contribution path)
+/crates/mahalaxmi-providers/               @mahalaxmi-ai
+
+# Detection rule engine
+/crates/mahalaxmi-detection/               @mahalaxmi-ai
+
+# AST indexing and repo maps
+/crates/mahalaxmi-indexing/                @mahalaxmi-ai
+
+# Memory store
+/crates/mahalaxmi-memory/                  @mahalaxmi-ai
+
+# CLI
+/crates/mahalaxmi-cli/                     @mahalaxmi-ai
+
+# CI/CD and automation — always requires maintainer sign-off
+/.github/                                  @mahalaxmi-ai
+
+# Legal and community health files — always requires maintainer sign-off
+/LICENSE                                   @mahalaxmi-ai
+/CLA.md                                    @mahalaxmi-ai
+/CONTRIBUTING.md                           @mahalaxmi-ai
+/CODE_OF_CONDUCT.md                        @mahalaxmi-ai
+/SECURITY.md                               @mahalaxmi-ai

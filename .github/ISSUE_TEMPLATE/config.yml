@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 Usage question or general help
+    url: https://github.com/mahalaxmi-ai/mahalaxmi/discussions
+    about: Ask how to use Mahalaxmi, get help debugging, or start a discussion
+
+  - name: 🎮 Discord community
+    url: https://discord.gg/bSkzhTPK
+    about: Real-time help from the community and maintainers
+
+  - name: 🔒 Security vulnerability
+    url: https://github.com/mahalaxmi-ai/mahalaxmi/security/advisories/new
+    about: Report a security issue privately — do NOT open a public issue
