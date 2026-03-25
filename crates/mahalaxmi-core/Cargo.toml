@@ -26,7 +26,7 @@ tracing-subscriber = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 fluent-bundle = "0.15"
-fluent-syntax = "0.11"
+fluent-syntax = "0.12"
 unic-langid = "0.9"
 dirs = "5"
 tracing-appender = "0.2"
