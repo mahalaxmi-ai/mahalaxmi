@@ -16,7 +16,7 @@ tracing = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
-rusqlite = { version = "0.31", features = ["bundled"], optional = true }
+rusqlite = { version = "0.39", features = ["bundled"], optional = true }
 
 [features]
 sqlite = ["dep:rusqlite"]
